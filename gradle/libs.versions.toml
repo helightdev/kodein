@@ -1,0 +1,28 @@
+[versions]
+kotlin = "2.3.0-RC3"
+kotlinxCoroutines = "1.10.2"
+kotlinxSerialization = "1.9.0"
+mongoDriver = "5.6.2"
+testContainers = "2.0.2"
+slf4j = "2.0.9"
+
+[libraries]
+kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlinxSerializationJson = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+kotlinxSerializationCbor = { module = "org.jetbrains.kotlinx:kotlinx-serialization-cbor", version.ref = "kotlinxSerialization" }
+kotlinxCoroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+kotlinReflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+mongoDriver = { module = "org.mongodb:mongodb-driver-kotlin-coroutine", version.ref = "mongoDriver" }
+mongoBsonX = { module = "org.mongodb:bson-kotlinx", version.ref = "mongoDriver" }
+testContainersJunit = { module = "org.testcontainers:testcontainers-junit-jupiter", version.ref = "testContainers" }
+testContainers = { module = "org.testcontainers:testcontainers", version.ref = "testContainers" }
+slf4jApi = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+slf4jSimple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
+
+[bundles]
+kotlinxEcosystem = ["kotlinxSerializationJson", "kotlinxSerializationCbor", "kotlinxCoroutines", "kotlinReflect"]
+mongo = ["mongoDriver", "mongoBsonX"]
+testContainers = ["testContainersJunit", "testContainers"]
+
+[plugins]
+kotlinPluginSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
