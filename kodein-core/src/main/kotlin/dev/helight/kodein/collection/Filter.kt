@@ -11,6 +11,8 @@ sealed class Filter {
     class And(val filters: List<Filter>) : Filter()
     class Or(val filters: List<Filter>) : Filter()
     class Not(val filter: Filter) : Filter()
+    class Native(val value: Any) : Filter()
+
 
     fun eval(document: BsonDocument): Boolean {
         return when (this) {
@@ -18,6 +20,7 @@ sealed class Filter {
             is Or -> filters.any { it.eval(document) }
             is Not -> !filter.eval(document)
             is Field -> this.evalField(document)
+            is Native -> throw UnsupportedOperationException("Native filter evaluation is not supported")
         }
     }
 

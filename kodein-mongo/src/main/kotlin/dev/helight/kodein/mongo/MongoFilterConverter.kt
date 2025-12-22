@@ -60,6 +60,7 @@ object MongoFilterConverter {
 
     fun convert(filter: Filter, relaxed: Boolean, builder: MongoQueryBuilder) {
         when (filter) {
+            is Filter.Native -> builder.addFilter(filter.value as Bson)
             is Filter.And -> builder.addAnd(MongoQueryBuilder().apply {
                 filter.filters.forEach { convert(it, relaxed, this) }
             })

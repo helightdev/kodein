@@ -54,6 +54,10 @@ interface FilterBuilderBase {
 @QueryDsl
 interface FilterBuilder : FilterBuilderBase, DumbFieldSpecFilterBuilder, TypeAwareFieldSpecFilterBuilder, ArrayFieldSpecFilterBuilder {
 
+    fun addNative(value: Any) {
+        filterList.add(Filter.Native(value))
+    }
+
     fun and(block: FilterBuilder.() -> Unit) {
         val builder = FilterBuilderImpl()
         builder.block()
