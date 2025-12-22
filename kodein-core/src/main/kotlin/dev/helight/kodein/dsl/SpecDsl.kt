@@ -83,8 +83,8 @@ interface TypeAwareFieldSpecFilterBuilder : FilterBuilderBase {
 inline fun <T : CollectionSpec, R> T.scope(
     collection: DocumentCollection,
     block: T.(collection: DocumentCollection) -> R
-) {
-    this.block(collection)
+): R {
+    return this.block(collection)
 }
 
 
@@ -92,7 +92,7 @@ inline fun <T : CollectionSpec, R> T.scope(
 inline fun <A : Any, T : TypedCollectionSpec<A>, R> T.crudScope(
     collection: DocumentCollection,
     block: T.(collection: CrudCollection<A, T>) -> R
-) {
+): R {
     val collection = CrudCollection(collection, this)
-    this.block(collection)
+    return this.block(collection)
 }
