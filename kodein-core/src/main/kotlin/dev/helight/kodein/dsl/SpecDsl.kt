@@ -80,18 +80,18 @@ interface TypeAwareFieldSpecFilterBuilder : FilterBuilderBase {
 }
 
 @SpecDsl
-inline fun <T : CollectionSpec> T.scope(
+inline fun <T : CollectionSpec, R> T.scope(
     collection: DocumentCollection,
-    block: T.(collection: DocumentCollection) -> Unit
+    block: T.(collection: DocumentCollection) -> R
 ) {
     this.block(collection)
 }
 
 
 @SpecDsl
-inline fun <A : Any, T : TypedCollectionSpec<A>> T.crudScope(
+inline fun <A : Any, T : TypedCollectionSpec<A>, R> T.crudScope(
     collection: DocumentCollection,
-    block: T.(collection: CrudCollection<A, T>) -> Unit
+    block: T.(collection: CrudCollection<A, T>) -> R
 ) {
     val collection = CrudCollection(collection, this)
     this.block(collection)
