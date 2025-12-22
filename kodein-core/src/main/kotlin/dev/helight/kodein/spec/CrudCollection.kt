@@ -105,7 +105,7 @@ class CrudCollection<T : Any, Spec : TypedCollectionSpec<T>>(
         return collection.update(block)
     }
 
-    suspend fun updateOne(block: UpdateBuilder.() -> Unit): Boolean {
+    suspend fun updateOne(block: SelectiveUpdateBuilder.() -> Unit): Boolean {
         return collection.updateOne(block)
     }
 
