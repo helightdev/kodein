@@ -111,7 +111,6 @@ interface StrictnessTests : DocumentDatabaseScope {
         val neqMatch = collection.find {
             "qty" notEq 25L
         }.toList()
-        println(neqMatch)
         assertEquals(4, neqMatch.size)
 
         val neqDouble = collection.find {

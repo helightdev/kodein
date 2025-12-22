@@ -78,6 +78,11 @@ interface CollectionArrayTests : DocumentDatabaseScope {
             "tags" containsAll listOf("red", "blank")
         }.toList()
         assertEquals(4, containsAll.size)
+
+        val size = collection.find {
+            "tags" size 2
+        }.toList()
+        assertEquals(3, size.size)
     }
 
 }

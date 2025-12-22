@@ -17,7 +17,7 @@ import org.bson.BsonDocument
 
 class MongoDocumentCollection(
     val collection: MongoCollection<BsonDocument>, override val kodein: Kodein,
-    private val relaxed : Boolean = false
+    private val relaxed : Boolean = true
 ) : DocumentCollection {
     override val supportsProjections: Boolean
         get() = true

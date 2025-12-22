@@ -147,6 +147,10 @@ interface FilterBuilder : FilterBuilderBase, DumbFieldSpecFilterBuilder, TypeAwa
         )
     }
 
+    infix fun String.size(size: Int) {
+        filterList.add(Filter.Field.ArrSize(this, BsonInt32(size)))
+    }
+
     infix fun String.contains(value: Any?) {
         filterList.add(Filter.Field.ArrCont(this, BsonMarshaller.marshal(value)))
     }

@@ -4,6 +4,7 @@ import dev.helight.kodein.compareBsonValues
 import dev.helight.kodein.getEmbedded
 import org.bson.BsonArray
 import org.bson.BsonDocument
+import org.bson.BsonInt32
 import org.bson.BsonNumber
 import org.bson.BsonValue
 
@@ -114,6 +115,14 @@ sealed class Filter {
                 val fieldValue = document.getEmbedded(path) ?: return true
                 if (fieldValue !is BsonArray) return true
                 return fieldValue.none { eq(it, value) }
+            }
+        }
+
+        class ArrSize(path: String, override val value: BsonInt32) : Field(path) {
+            override fun evalField(document: BsonDocument): Boolean {
+                val fieldValue = document.getEmbedded(path) ?: return false
+                if (fieldValue !is BsonArray) return false
+                return fieldValue.size == value.intValue()
             }
         }
 

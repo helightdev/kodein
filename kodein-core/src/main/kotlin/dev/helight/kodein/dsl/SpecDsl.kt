@@ -11,6 +11,7 @@ import dev.helight.kodein.spec.PrimitiveFieldSpec
 import dev.helight.kodein.spec.SpecDsl
 import dev.helight.kodein.spec.TypedCollectionSpec
 import org.bson.BsonArray
+import org.bson.BsonInt32
 
 interface DumbFieldSpecFilterBuilder : FilterBuilderBase {
     infix fun DumbFieldSpec.eq(value: Any?) {
@@ -95,6 +96,10 @@ interface ArrayFieldSpecFilterBuilder : FilterBuilderBase {
 
     infix fun <I> ArrayFieldSpec<I, *>.notContains(value: I?) {
         filterList.add(Filter.Field.ArrNotCont(this.name, BsonMarshaller.marshal(value)))
+    }
+
+    infix fun <I> ArrayFieldSpec<I, *>.size(size: Int) {
+        filterList.add(Filter.Field.ArrSize(this.name, BsonInt32(size)))
     }
 
     infix fun <I> ArrayFieldSpec<I, *>.intersects(values: Collection<I>) {

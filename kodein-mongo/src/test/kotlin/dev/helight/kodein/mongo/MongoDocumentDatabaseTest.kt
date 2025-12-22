@@ -27,7 +27,7 @@ class MongoDocumentDatabaseTest : DocumentDatabaseContract {
     override fun databaseScope(block: suspend DocumentDatabase.() -> Unit) = runBlocking {
         val client = MongoClient.create(connectionString)
         val database = client.getDatabase("test")
-        val provider = MongoDocumentDatabase(client, database, Kodein())
+        val provider = MongoDocumentDatabase(client, database, Kodein(), false)
         block(provider)
         provider.close()
     }

@@ -52,9 +52,7 @@ object MongoFilterConverter {
     fun convert(filter: Filter, relaxed: Boolean = false): Bson {
         val builder = MongoQueryBuilder()
         convert(filter, relaxed, builder)
-        return builder.buildRootAnd().also {
-            println("Converted filter: ${it.toBsonDocument().toJson()}")
-        }
+        return builder.buildRootAnd()
     }
 
 
@@ -141,7 +139,7 @@ object MongoFilterConverter {
                     Filters.not(Filters.type(filter.path, BsonType.ARRAY))
                 ))
             }
-
+            is Filter.Field.ArrSize -> builder.addFilter(Filters.size(filter.path, filter.value.intValue()))
             is Filter.Field.ArrComp -> when(filter.type) {
                 Filter.ArrayCompType.ANY -> when(relaxed) {
                     true -> builder.addFilter(Filters.`in`(filter.path, filter.value))
