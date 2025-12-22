@@ -7,11 +7,11 @@ import dev.helight.kodein.dsl.buildFilter
 import dev.helight.kodein.dsl.buildUpdate
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.firstOrNull
-import java.lang.reflect.Type
 import kotlin.test.*
 import kotlin.time.Clock
 
-interface DocumentDatabaseContract : DocumentDatabaseScope, CollectionFindTests, CollectionArrayTests, TypedCollectionTests {
+interface DocumentDatabaseContract : DocumentDatabaseScope, CollectionFindTests, StrictnessTests,
+    CollectionArrayTests, TypedCollectionTests {
 
     @Test
     fun `Simple CRUD Operations`() = databaseScope {

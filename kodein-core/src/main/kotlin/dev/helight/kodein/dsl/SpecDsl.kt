@@ -5,6 +5,7 @@ import dev.helight.kodein.spec.CollectionSpec
 import dev.helight.kodein.collection.DocumentCollection
 import dev.helight.kodein.spec.DumbFieldSpec
 import dev.helight.kodein.collection.Filter
+import dev.helight.kodein.spec.ArrayFieldSpec
 import dev.helight.kodein.spec.CrudCollection
 import dev.helight.kodein.spec.PrimitiveFieldSpec
 import dev.helight.kodein.spec.SpecDsl
@@ -77,6 +78,65 @@ interface TypeAwareFieldSpecFilterBuilder : FilterBuilderBase {
     infix fun <T : Any> PrimitiveFieldSpec<T>.lte(value: T?) {
         filterList.add(Filter.Field.Comp(this.name, BsonMarshaller.marshal(value), Filter.CompType.LTE))
     }
+}
+
+interface ArrayFieldSpecFilterBuilder : FilterBuilderBase {
+    infix fun <I> ArrayFieldSpec<I, *>.eq(collection: Collection<I>?) {
+        filterList.add(Filter.Field.Eq(this.name, BsonMarshaller.marshal(collection)))
+    }
+
+    infix fun <I> ArrayFieldSpec<I, *>.notEq(collection: Collection<I>?) {
+        filterList.add(Filter.Field.Ne(this.name, BsonMarshaller.marshal(collection)))
+    }
+
+    infix fun <I> ArrayFieldSpec<I, *>.contains(value: I?) {
+        filterList.add(Filter.Field.ArrCont(this.name, BsonMarshaller.marshal(value)))
+    }
+
+    infix fun <I> ArrayFieldSpec<I, *>.notContains(value: I?) {
+        filterList.add(Filter.Field.ArrNotCont(this.name, BsonMarshaller.marshal(value)))
+    }
+
+    infix fun <I> ArrayFieldSpec<I, *>.intersects(values: Collection<I>) {
+        filterList.add(
+            Filter.Field.ArrComp(
+                this.name,
+                BsonMarshaller.marshal(values) as BsonArray,
+                Filter.ArrayCompType.ANY
+            )
+        )
+    }
+
+    infix fun <I> ArrayFieldSpec<I, *>.notIntersects(values: Collection<I>) {
+        filterList.add(
+            Filter.Field.ArrComp(
+                this.name,
+                BsonMarshaller.marshal(values) as BsonArray,
+                Filter.ArrayCompType.NONE
+            )
+        )
+    }
+
+    infix fun <I> ArrayFieldSpec<I, *>.containsAll(values: Collection<I>) {
+        filterList.add(
+            Filter.Field.ArrComp(
+                this.name,
+                BsonMarshaller.marshal(values) as BsonArray,
+                Filter.ArrayCompType.ALL
+            )
+        )
+    }
+
+    infix fun <I> ArrayFieldSpec<I, *>.equalsSet(values: Collection<I>) {
+        filterList.add(
+            Filter.Field.ArrComp(
+                this.name,
+                BsonMarshaller.marshal(values) as BsonArray,
+                Filter.ArrayCompType.SET
+            )
+        )
+    }
+
 }
 
 @SpecDsl

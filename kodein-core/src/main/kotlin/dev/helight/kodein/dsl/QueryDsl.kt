@@ -52,7 +52,7 @@ interface FilterBuilderBase {
 }
 
 @QueryDsl
-interface FilterBuilder : FilterBuilderBase, DumbFieldSpecFilterBuilder, TypeAwareFieldSpecFilterBuilder {
+interface FilterBuilder : FilterBuilderBase, DumbFieldSpecFilterBuilder, TypeAwareFieldSpecFilterBuilder, ArrayFieldSpecFilterBuilder {
 
     fun and(block: FilterBuilder.() -> Unit) {
         val builder = FilterBuilderImpl()
@@ -142,6 +142,56 @@ interface FilterBuilder : FilterBuilderBase, DumbFieldSpecFilterBuilder, TypeAwa
             )
         )
     }
+
+    infix fun String.contains(value: Any?) {
+        filterList.add(Filter.Field.ArrCont(this, BsonMarshaller.marshal(value)))
+    }
+
+    infix fun String.notContains(value: Any?) {
+        filterList.add(Filter.Field.ArrNotCont(this, BsonMarshaller.marshal(value)))
+    }
+
+    infix fun String.intersects(values: Collection<Any?>) {
+        filterList.add(
+            Filter.Field.ArrComp(
+                this,
+                BsonMarshaller.marshal(values) as BsonArray,
+                Filter.ArrayCompType.ANY
+            )
+        )
+    }
+
+    infix fun String.notIntersects(values: Collection<Any?>) {
+        filterList.add(
+            Filter.Field.ArrComp(
+                this,
+                BsonMarshaller.marshal(values) as BsonArray,
+                Filter.ArrayCompType.NONE
+            )
+        )
+    }
+
+    infix fun String.containsAll(values: Collection<Any?>) {
+        filterList.add(
+            Filter.Field.ArrComp(
+                this,
+                BsonMarshaller.marshal(values) as BsonArray,
+                Filter.ArrayCompType.ALL
+            )
+        )
+    }
+
+    infix fun String.equalsSet(values: Collection<Any?>) {
+        filterList.add(
+            Filter.Field.ArrComp(
+                this,
+                BsonMarshaller.marshal(values) as BsonArray,
+                Filter.ArrayCompType.SET
+            )
+        )
+    }
+
+
     //</editor-fold>
 
     companion object {

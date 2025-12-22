@@ -11,16 +11,44 @@ import org.bson.BsonObjectId
 import org.bson.BsonString
 import org.bson.BsonType
 import org.bson.BsonValue
-import org.bson.types.ObjectId
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.set
 import kotlin.text.isNotEmpty
 import kotlin.time.Instant
 
-internal fun splitPath(path: String): Sequence<String> {
-    return path.splitToSequence('.').filter { it.isNotEmpty() }
+internal fun splitPath(path: String): Sequence<String> = sequence {
+    require(path.isNotEmpty()) { "Invalid path: empty" }
+
+    var start = 0
+    var i = 0
+    var startOfSegment = true
+
+    while (i < path.length) {
+        val c = path[i]
+        when {
+            startOfSegment -> {
+                require(c == '_' || c.isLetter()) {
+                    "Invalid path segment in '$path': must start with letter or underscore"
+                }
+                startOfSegment = false
+            }
+            c == '.' -> {
+                require(i > start) { "Invalid path segment in '$path': empty segment" }
+                yield(path.substring(start, i))
+                start = i + 1
+                startOfSegment = true
+            }
+            c == '_' || c.isLetterOrDigit() -> Unit
+            else -> require(false) { "Invalid path segment in '$path': invalid character '$c'" }
+        }
+        i++
+    }
+
+    require(!startOfSegment) { "Invalid path segment in '$path': trailing dot" }
+    yield(path.substring(start))
 }
+
 
 internal fun BsonDocument.constructiveBaseHead(sequence: Sequence<String>): Pair<BsonDocument, String>? {
     val iterator = sequence.iterator()
@@ -138,6 +166,15 @@ internal fun compareBsonValues(a: BsonValue?, b: BsonValue?): Int {
     }
 
     return a.bsonType.ordinal.compareTo(b.bsonType.ordinal)
+}
+
+internal fun bsonEquals(a: BsonValue?, b: BsonValue?): Boolean {
+    if (a == b) return true
+    if (a is BsonNumber && b is BsonNumber) {
+        if (a is BsonDouble || b is BsonDouble) return a.doubleValue() == b.doubleValue()
+        return a.longValue() == b.longValue()
+    }
+    return false
 }
 
 private fun incrementBsonValue(value: BsonValue, increment: Number): BsonValue {

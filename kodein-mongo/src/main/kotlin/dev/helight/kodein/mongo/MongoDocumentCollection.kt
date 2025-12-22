@@ -16,11 +16,12 @@ import kotlinx.coroutines.flow.map
 import org.bson.BsonDocument
 
 class MongoDocumentCollection(
-    val collection: MongoCollection<BsonDocument>, override val kodein: Kodein
+    val collection: MongoCollection<BsonDocument>, override val kodein: Kodein,
+    private val relaxed : Boolean = false
 ) : DocumentCollection {
     override val supportsProjections: Boolean
         get() = true
-
+    
     override suspend fun insert(document: BsonDocument): Boolean {
         val result = collection.insertOne(document)
         return result.insertedId != null
@@ -35,7 +36,7 @@ class MongoDocumentCollection(
         filter: Filter,
         update: Update
     ): Int {
-        val bsonFilter = MongoFilterConverter.convertLogicFilter(filter)
+        val bsonFilter = MongoFilterConverter.convert(filter, relaxed)
         val result = collection.updateMany(
             bsonFilter, MongoFilterConverter.convertUpdates(update), UpdateOptions().upsert(update.upsert)
         )
@@ -46,7 +47,7 @@ class MongoDocumentCollection(
         filter: Filter,
         update: Update
     ): Boolean {
-        val bsonFilter = MongoFilterConverter.convertLogicFilter(filter)
+        val bsonFilter = MongoFilterConverter.convert(filter, relaxed)
         val result = collection.updateOne(
             bsonFilter, MongoFilterConverter.convertUpdates(update), UpdateOptions().upsert(update.upsert)
         )
@@ -58,26 +59,26 @@ class MongoDocumentCollection(
         document: BsonDocument,
         upsert: Boolean
     ): Boolean {
-        val bsonFilter = MongoFilterConverter.convertLogicFilter(filter)
+        val bsonFilter = MongoFilterConverter.convert(filter, relaxed)
         val result = collection.replaceOne(bsonFilter, document, ReplaceOptions().upsert(upsert))
         return result.modifiedCount > 0 || result.upsertedId != null
     }
 
     override suspend fun delete(filter: Filter): Int {
-        val bsonFilter = MongoFilterConverter.convertLogicFilter(filter)
+        val bsonFilter = MongoFilterConverter.convert(filter, relaxed)
         val result = collection.deleteMany(bsonFilter)
         return result.deletedCount.toInt()
     }
 
     override suspend fun deleteOne(filter: Filter): Boolean {
-        val bsonFilter = MongoFilterConverter.convertLogicFilter(filter)
+        val bsonFilter = MongoFilterConverter.convert(filter, relaxed)
         val result = collection.deleteOne(bsonFilter)
         return result.deletedCount > 0
     }
 
     override suspend fun count(filter: Filter?): Long {
         if (filter == null) return collection.countDocuments()
-        val bsonFilter = MongoFilterConverter.convertLogicFilter(filter)
+        val bsonFilter = MongoFilterConverter.convert(filter, relaxed)
         return collection.countDocuments(bsonFilter)
     }
 
@@ -85,7 +86,7 @@ class MongoDocumentCollection(
         filter: Filter?,
         options: FindOptions
     ): Flow<KDocument> {
-        val bsonFilter = filter?.let { MongoFilterConverter.convertLogicFilter(it) } ?: BsonDocument()
+        val bsonFilter = filter?.let { MongoFilterConverter.convert(it, relaxed) } ?: BsonDocument()
         var findFlow = collection.find(bsonFilter)
         if (options.fields.isNotEmpty()) {
             findFlow = findFlow.projection(MongoFilterConverter.projection(options.fields))
@@ -97,7 +98,7 @@ class MongoDocumentCollection(
     }
 
     override suspend fun findOne(filter: Filter, options: FindOptions): KDocument? {
-        val bsonFilter = MongoFilterConverter.convertLogicFilter(filter)
+        val bsonFilter = MongoFilterConverter.convert(filter, relaxed)
         var findFlow = collection.find(bsonFilter)
         if (options.fields.isNotEmpty()) {
             findFlow = findFlow.projection(MongoFilterConverter.projection(options.fields))

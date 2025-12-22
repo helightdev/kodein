@@ -27,7 +27,7 @@ open class DumbFieldSpec(
     name: String,
 ) : FieldSpec(name)
 
-open class TypeAwareFieldSpec<T: Any>(
+open class TypeAwareFieldSpec<T : Any>(
     name: String,
     val type: KClass<T>,
 ) : FieldSpec(name)
@@ -55,13 +55,13 @@ class CollectionFieldSpec<T : Any>(
     var indexName: String? = null,
     var hasTextIndex: Boolean = false
 ) : PrimitiveFieldSpec<T>(name, type) {
-    fun unique(indexName: String = "idx_$name"): CollectionFieldSpec<T> {
+    fun unique(indexName: String? = null): CollectionFieldSpec<T> {
         indexType = FieldIndexType.UNIQUE
         this.indexName = indexName
         return this
     }
 
-    fun indexed(indexName: String = "idx_$name"): CollectionFieldSpec<T> {
+    fun indexed(indexName: String? = null): CollectionFieldSpec<T> {
         indexType = FieldIndexType.INDEXED
         this.indexName = indexName
         return this
@@ -96,6 +96,20 @@ class EmbeddedFieldSpec<T : Any, Spec : TypedCollectionSpec<T>>(
     }
 
     override fun getFieldsNames(): Collection<String> = spec.getFieldsNames().map { "${this.name}.${it}" }
+}
+
+class ArrayFieldSpec<I, T : Collection<I>>(
+    name: String,
+    type: KClass<T>,
+    var indexType: FieldIndexType = FieldIndexType.NONE,
+    var indexName: String? = null,
+) : TypeAwareFieldSpec<T>(name, type) {
+
+    fun indexed(indexName: String? = null): ArrayFieldSpec<I, T> {
+        indexType = FieldIndexType.INDEXED
+        this.indexName = indexName
+        return this
+    }
 }
 
 enum class FieldIndexType {

@@ -12,7 +12,8 @@ import org.bson.BsonDocument
 import org.bson.codecs.configuration.CodecRegistries
 
 class MongoDocumentDatabase(
-    val client: MongoClient, val database: MongoDatabase, override val kodein: Kodein
+    val client: MongoClient, val database: MongoDatabase, override val kodein: Kodein,
+    private val relaxed: Boolean = false
 ) : DocumentDatabase {
 
     private val mergedRegistries = CodecRegistries.fromRegistries(
@@ -23,14 +24,14 @@ class MongoDocumentDatabase(
     override suspend fun getCollection(name: String): DocumentCollection {
         val collection = database.getCollection<BsonDocument>(name)
             .withCodecRegistry(mergedRegistries)
-        return MongoDocumentCollection(collection, kodein)
+        return MongoDocumentCollection(collection, kodein, relaxed)
     }
 
     override suspend fun createCollection(name: String): DocumentCollection {
         database.createCollection(name)
         val collection = database.getCollection<BsonDocument>(name)
             .withCodecRegistry(mergedRegistries)
-        return MongoDocumentCollection(collection, kodein)
+        return MongoDocumentCollection(collection, kodein, relaxed)
     }
 
     override suspend fun dropCollection(name: String): Boolean {

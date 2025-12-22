@@ -45,6 +45,22 @@ interface TypedCollectionTests : DocumentDatabaseScope {
         }
     }
 
+    @Serializable
+    data class InventoryItem(
+        val item: String,
+        val qty: Int,
+        val tags: Set<String>,
+        val dimCm: List<Double>,
+    ) : BaseDocument() {
+        companion object Spec : TypedCollectionSpec<InventoryItem>(InventoryItem::class) {
+            val item = field(InventoryItem::item)
+            val qty = field(InventoryItem::qty)
+            val tags = arrayField(InventoryItem::tags)
+            val dimCm = arrayField(InventoryItem::dimCm)
+        }
+    }
+
+
     companion object {
         private val movies = listOf(
             Movie("Inception", 8.8),
@@ -57,6 +73,14 @@ interface TypedCollectionTests : DocumentDatabaseScope {
             Rating(Author("Alice"), 9.0),
             Rating(Author("Bob"), 6.5, "Could be better"),
             Rating(Author("Charlie"), 4.0, "Not my taste")
+        )
+
+        private val inventory = listOf(
+            InventoryItem("journal", 25, setOf("blank", "red"), listOf(14.0, 21.0)),
+            InventoryItem("notebook", 50, setOf("red", "blank"), listOf(14.0, 21.0)),
+            InventoryItem("paper", 100, setOf("red", "blank", "plain"), listOf(14.0, 21.0)),
+            InventoryItem("planner", 75, setOf("blank", "red"), listOf(22.85, 30.0)),
+            InventoryItem("postcard", 45, setOf("blue"), listOf(10.0, 15.25))
         )
     }
 
@@ -158,6 +182,60 @@ interface TypedCollectionTests : DocumentDatabaseScope {
             }.toList()
             assertEquals(1, byAlice.size)
             assertEquals(9.0, byAlice[0].score)
+        }
+    }
+
+    @Test
+    fun `Typed collection array operations`() = databaseScope {
+        InventoryItem.crudScope(getCollection("typed_inventory_items")) {
+            it.insertMany(inventory)
+
+            val dimQuery = it.find {
+                dimCm contains 30.0
+            }.toList()
+            assertEquals(1, dimQuery.size)
+
+            // Copied from array tests
+            val exactMatch = it.find {
+                tags eq listOf("red", "blank")
+            }.toList()
+            assertEquals(1, exactMatch.size)
+            assertEquals("notebook", exactMatch[0].item)
+
+            val notMatch = it.find {
+                tags notEq listOf("red", "blank")
+            }.toList()
+            assertEquals(4, notMatch.size)
+
+            val elementContains = it.find {
+                tags contains "red"
+            }.toList()
+            assertEquals(4, elementContains.size)
+
+            val notContains = it.find {
+                tags notContains "red"
+            }.toList()
+            assertEquals(1, notContains.size)
+
+            val intersects = it.find {
+                tags intersects listOf("red", "blank")
+            }.toList()
+            assertEquals(4, intersects.size)
+
+            val notIntersects = it.find {
+                tags notIntersects listOf("red", "blank")
+            }.toList()
+            assertEquals(1, notIntersects.size)
+
+            val equalsSet = it.find {
+                tags equalsSet listOf("red", "blank")
+            }.toList()
+            assertEquals(3, equalsSet.size)
+
+            val containsAll = it.find {
+                tags containsAll listOf("red", "blank")
+            }.toList()
+            assertEquals(4, containsAll.size)
         }
     }
 

@@ -30,6 +30,15 @@ abstract class CollectionSpec : FieldNameProducer {
         return element
     }
 
+    fun <I, T : Collection<I>> arrayField(
+        name: String,
+        type: KClass<T>,
+    ): ArrayFieldSpec<I, T> {
+        val element = ArrayFieldSpec(name, type)
+        _fields.add(element)
+        return element
+    }
+
     inline fun <reified A : Any> field(name: String) = field(name, A::class)
 
     private fun getSerialName(property: KProperty<*>): String {
@@ -60,6 +69,14 @@ abstract class CollectionSpec : FieldNameProducer {
         spec: ASpec
     ) = embeddedField(getSerialName(property), spec)
 
+    fun <I, T : Collection<I>> arrayField(
+        property: KProperty<T>
+    ) = arrayField(getSerialName(property), getFieldType(property))
+
+    @JvmName("arrayFieldNullable")
+    fun <I, T : Collection<I>> arrayField(
+        property: KProperty<T?>
+    ) = arrayField(getSerialName(property), getFieldType(property))
 
     internal fun collectIndices(textIndices: MutableSet<String>, path: String? = null): Map<String, Pair<String, FieldIndexType>> {
         val indices = mutableMapOf<String, Pair<String, FieldIndexType>>()
@@ -72,7 +89,15 @@ abstract class CollectionSpec : FieldNameProducer {
                     field.indexName ?: fieldPath.replace(".", "_"),
                     field.indexType
                 )
-            } else if (field is EmbeddedFieldSpec<*, *>) {
+            } else if (field is ArrayFieldSpec<*,*>) {
+                val fieldPath = path?.let { "$it.${field.name}" } ?: field.name
+                if (field.indexType == FieldIndexType.NONE) continue
+                indices[field.name] = Pair(
+                    field.indexName ?: fieldPath.replace(".", "_"),
+                    field.indexType
+                )
+            }
+            else if (field is EmbeddedFieldSpec<*, *>) {
                 val embeddedPath = if (path == null) field.name else "$path.${field.name}"
                 val embeddedIndices = field.spec.collectIndices(textIndices, embeddedPath)
                 indices.putAll(embeddedIndices)

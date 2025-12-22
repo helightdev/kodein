@@ -33,8 +33,8 @@ interface CollectionArrayTests : DocumentDatabaseScope {
     }
 
     @Test
-    fun `Array Element Equality`() = databaseScope {
-        val collection = getCollection("array_element_equality")
+    fun `Basic array operations`() = databaseScope {
+        val collection = getCollection("array_element_contains")
         val insertCount = collection.insert(inventory)
         assertEquals(5, insertCount)
 
@@ -44,56 +44,42 @@ interface CollectionArrayTests : DocumentDatabaseScope {
         assertEquals(1, exactMatch.size)
         assertEquals("notebook", exactMatch[0].getString("item"))
 
+        val notMatch = collection.find {
+            "tags" notEq listOf("red", "blank")
+        }.toList()
+        assertEquals(4, notMatch.size)
+
         val elementContains = collection.find {
-            "tags" eq "red"
+            "tags" contains "red"
         }.toList()
         assertEquals(4, elementContains.size)
 
-        val notEqualsExact = collection.find {
-            "tags" notEq listOf("red", "blank")
+        val notContains = collection.find {
+            "tags" notContains "red"
         }.toList()
-        assertEquals(4, notEqualsExact.size)
+        assertEquals(1, notContains.size)
 
-        val notEqualsElement = collection.find {
-            "tags" notEq "red"
+        val intersects = collection.find {
+            "tags" intersects listOf("red", "blank")
         }.toList()
-        assertEquals(1, notEqualsElement.size)
+        assertEquals(4, intersects.size)
+
+        val notIntersects = collection.find {
+            "tags" notIntersects listOf("red", "blank")
+        }.toList()
+        assertEquals(1, notIntersects.size)
+
+        val equalsSet = collection.find {
+            "tags" equalsSet listOf("red", "blank")
+        }.toList()
+        assertEquals(3, equalsSet.size)
+
+        val containsAll = collection.find {
+            "tags" containsAll listOf("red", "blank")
+        }.toList()
+        assertEquals(4, containsAll.size)
     }
 
-    @Test
-    fun `Array Element Comparison`() = databaseScope {
-        val collection = getCollection("array_element_comparison")
-        val insertCount = collection.insert(inventory)
-        assertEquals(5, insertCount)
-
-        val greaterThan = collection.find {
-            "dim_cm" gt 25.0
-        }.toList()
-        assertEquals(1, greaterThan.size)
-        assertEquals("planner", greaterThan[0].getString("item"))
-
-        val lessThanOrEqual = collection.find {
-            "dim_cm" lte 15.25
-        }.toList()
-        assertEquals(4, lessThanOrEqual.size)
-    }
-
-    @Test
-    fun `Array In and Not In`() = databaseScope {
-        val collection = getCollection("array_in_and_not_in")
-        val insertCount = collection.insert(inventory)
-        assertEquals(5, insertCount)
-
-        val inList = collection.find {
-            "tags" inList listOf("blue", "plain")
-        }.toList()
-        assertEquals(2, inList.size)
-
-        val notInList = collection.find {
-            "tags" notInList listOf("blue", "plain")
-        }.toList()
-        assertEquals(3, notInList.size)
-    }
 }
 
 
