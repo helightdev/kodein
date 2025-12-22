@@ -34,6 +34,11 @@ interface StrictnessTests : DocumentDatabaseScope {
 
     @Test
     fun `Scalars are not equal to arrays`() = databaseScope {
+        if (!isStrict) {
+            println("Skipping strictness test on non-strict database")
+            return@databaseScope
+        }
+
         val collection = getCollection("scalar_vs_array_equality")
         val insertCount = collection.insert(inventory)
         assertEquals(5, insertCount)
@@ -51,6 +56,11 @@ interface StrictnessTests : DocumentDatabaseScope {
 
     @Test
     fun `In and Nin do not peform array intersections`() = databaseScope {
+        if (!isStrict) {
+            println("Skipping strictness test on non-strict database")
+            return@databaseScope
+        }
+
         val collection = getCollection("in_nin_array_intersection")
         val insertCount = collection.insert(inventory)
         assertEquals(5, insertCount)
@@ -68,6 +78,11 @@ interface StrictnessTests : DocumentDatabaseScope {
 
     @Test
     fun `Number coercion in equality checks`() = databaseScope {
+        if (!isStrict) {
+            println("Skipping strictness test on non-strict database")
+            return@databaseScope
+        }
+
         val collection = getCollection("number_coercion_equality")
         val insertCount = collection.insert(inventory)
         assertEquals(5, insertCount)
