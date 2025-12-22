@@ -11,7 +11,7 @@ import java.lang.reflect.Type
 import kotlin.test.*
 import kotlin.time.Clock
 
-interface DocumentDatabaseContract : DocumentDatabaseScope, CollectionFindTests, TypedCollectionTests {
+interface DocumentDatabaseContract : DocumentDatabaseScope, CollectionFindTests, CollectionArrayTests, TypedCollectionTests {
 
     @Test
     fun `Simple CRUD Operations`() = databaseScope {
