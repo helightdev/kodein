@@ -33,6 +33,7 @@ interface DocumentCollection {
 
     suspend fun update(filter: Filter, update: Update): Int
     suspend fun updateOne(filter: Filter, update: Update): Boolean
+    suspend fun updateOneReturning(filter: Filter, update: Update): KDocument?
     suspend fun replace(filter: Filter, document: BsonDocument, upsert: Boolean = false): Boolean
     suspend fun delete(filter: Filter): Int
     suspend fun deleteOne(filter: Filter): Boolean
@@ -108,6 +109,11 @@ interface DocumentCollection {
     suspend fun updateOne(block: SelectiveUpdateBuilder.() -> Unit): Boolean {
         val (filter,update) = SelectiveUpdateBuilder(kodein).apply { block() }.build()
         return updateOne(filter, update)
+    }
+
+    suspend fun updateOneReturning(block: SelectiveUpdateBuilder.() -> Unit): KDocument? {
+        val (filter,update) = SelectiveUpdateBuilder(kodein).apply { block() }.build()
+        return updateOneReturning(filter, update)
     }
 
 }

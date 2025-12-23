@@ -74,6 +74,14 @@ class CrudCollection<T : Any, Spec : TypedCollectionSpec<T>>(
         return save(modified)
     }
 
+    suspend fun count(block: FilterBuilder.() -> Unit = {}): Long {
+        return collection.count(block)
+    }
+
+    suspend fun exists(block: FilterBuilder.() -> Unit = {}): Boolean {
+        return collection.exists(block)
+    }
+
     suspend fun delete(block: FilterBuilder.() -> Unit): Int {
         return collection.delete(block)
     }
@@ -118,6 +126,22 @@ class CrudCollection<T : Any, Spec : TypedCollectionSpec<T>>(
             update = update
         )
         if (!success) throw CrudException("Failed to update document")
+    }
+
+    suspend fun updateReturning(value: T, block: UpdateBuilder.() -> Unit): T? {
+        require(value is BaseDocument) { "Can only update documents extending BaseDocument" }
+        requireNotNull(value.bsonId)
+        val update = buildUpdate(block)
+        val updatedDocument = collection.updateOneReturning(
+            filter = idFilter(value.bsonId),
+            update = update
+        ) ?: return null
+        return updatedDocument.asClass(clazz)
+    }
+
+    suspend fun updateReturning(block: SelectiveUpdateBuilder.() -> Unit): T? {
+        val updatedDocument = collection.updateOneReturning(block) ?: return null
+        return updatedDocument.asClass(clazz)
     }
 
     suspend fun updateMany(values: List<T>, block: UpdateBuilder.() -> Unit): Int {

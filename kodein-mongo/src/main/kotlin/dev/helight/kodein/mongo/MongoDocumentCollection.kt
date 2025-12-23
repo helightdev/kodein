@@ -1,7 +1,9 @@
 package dev.helight.kodein.mongo
 
+import com.mongodb.client.model.FindOneAndUpdateOptions
 import com.mongodb.client.model.InsertManyOptions
 import com.mongodb.client.model.ReplaceOptions
+import com.mongodb.client.model.ReturnDocument
 import com.mongodb.client.model.UpdateOptions
 import com.mongodb.kotlin.client.coroutine.MongoCollection
 import dev.helight.kodein.KDocument
@@ -52,6 +54,19 @@ class MongoDocumentCollection(
             bsonFilter, MongoFilterConverter.convertUpdates(update), UpdateOptions().upsert(update.upsert)
         )
         return result.modifiedCount > 0 || result.upsertedId != null
+    }
+
+    override suspend fun updateOneReturning(
+        filter: Filter,
+        update: Update
+    ): KDocument? {
+        val bsonFilter = MongoFilterConverter.convert(filter, relaxed)
+        val updatedDocument = collection.findOneAndUpdate(
+            bsonFilter, MongoFilterConverter.convertUpdates(update), FindOneAndUpdateOptions()
+                .upsert(update.upsert)
+                .returnDocument(ReturnDocument.AFTER)
+        )
+        return updatedDocument?.let { kodein.introspect(it) }
     }
 
     override suspend fun replace(

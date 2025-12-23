@@ -89,6 +89,25 @@ class MemoryDocumentCollection(
         }
     }
 
+    override suspend fun updateOneReturning(
+        filter: Filter,
+        update: Update
+    ): KDocument? = mutex.write {
+        val entry = delegate.firstOrNull { filter.eval(it) }
+        if (entry != null) {
+            update.applyUpdates(entry)
+            return kodein.introspect(entry)
+        } else if (update.upsert) {
+            val newDocument = BsonDocument()
+            update.applyUpsert(newDocument, filter)
+            ensureId(newDocument)
+            delegate.add(newDocument)
+            return kodein.introspect(newDocument)
+        } else {
+            return null
+        }
+    }
+
     override suspend fun replace(
         filter: Filter,
         document: BsonDocument,

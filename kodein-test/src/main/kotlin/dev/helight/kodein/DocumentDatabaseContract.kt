@@ -425,4 +425,26 @@ interface DocumentDatabaseContract : DocumentDatabaseScope, CollectionFindTests,
         assertEquals("jack", retrieved2.getString("username"))
         assertEquals(6, retrieved2.getInt("level"))
     }
+
+    @Test
+    fun `Update one returning`() = databaseScope {
+        val collection = getCollection("update_returning_test_collection")
+        val insertResult = collection.updateOneReturning {
+            where { "username" eq "jack" }
+            "level" inc 10
+            upsert = true
+        }
+        assertNotNull(insertResult)
+        assertNotNull(insertResult.id)
+        assertEquals("jack", insertResult.getString("username"))
+        assertEquals(10, insertResult.getInt("level"))
+
+        val updateResult = collection.updateOneReturning {
+            where { "username" eq "jack" }
+            "level" inc 5
+        }
+        assertNotNull(updateResult)
+        assertEquals("jack", updateResult.getString("username"))
+        assertEquals(15, updateResult.getInt("level"))
+    }
 }
