@@ -1,6 +1,7 @@
 package dev.helight.kodein
 
 import dev.helight.kodein.dsl.buildDocument
+import dev.helight.kodein.serializers.KInstant
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import org.bson.BsonDocument
@@ -132,6 +133,6 @@ class BsonConversionTest {
         val longAsInt: Long,
         val doubleAsInt: Double,
         val intAsDouble: Int,
-        val date: Instant
+        val date: KInstant
     )
 }

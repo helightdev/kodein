@@ -1,23 +1,21 @@
 package dev.helight.kodein
 
+import dev.helight.kodein.serializers.KodeinInstantSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ByteArraySerializer
-import kotlinx.serialization.cbor.Cbor
-import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.descriptors.PolymorphicKind
 import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.buildSerialDescriptor
-import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.overwriteWith
+import kotlinx.serialization.modules.contextual
 import org.bson.*
-import org.bson.codecs.*
+import org.bson.codecs.BsonDocumentCodec
+import org.bson.codecs.DecoderContext
+import org.bson.codecs.DocumentCodec
+import org.bson.codecs.EncoderContext
 import org.bson.codecs.configuration.CodecRegistries
 import org.bson.codecs.configuration.CodecRegistry
 import org.bson.codecs.kotlinx.KotlinSerializerCodecProvider
@@ -152,6 +150,7 @@ class Kodein(
         @OptIn(ExperimentalSerializationApi::class)
         val DEFAULT_SERIALIZERS_MODULE: SerializersModule = SerializersModule {
             this.include(defaultSerializersModule)
+            contextual(KodeinInstantSerializer)
         }
 
         val DEFAULT_CODEC_REGISTRY: CodecRegistry =
