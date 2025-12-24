@@ -283,10 +283,22 @@ interface FindOptionsBuilder {
         return this
     }
 
+    fun fields(vararg specs: FieldSpec): FindOptionsBuilder {
+        fields.addAll(specs.map { it.name })
+        return this
+    }
+
     fun fields(producer: FieldNameProducer): FindOptionsBuilder {
         fields.addAll(producer.getFieldsNames())
         return this
     }
+
+    fun fields(producer: FieldNameProducer, vararg ignore: FieldSpec): FindOptionsBuilder {
+        val additions = producer.getFieldsNames().toSet() - ignore.map { it.name }.toSet()
+        fields.addAll(additions)
+        return this
+    }
+
 
     fun skip(value: Int): FindOptionsBuilder {
         skip = value

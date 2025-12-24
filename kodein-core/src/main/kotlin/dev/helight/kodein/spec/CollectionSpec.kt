@@ -7,17 +7,17 @@ import kotlin.reflect.jvm.jvmErasure
 
 @SpecDsl
 abstract class CollectionSpec : FieldNameProducer {
-    private val _fields = mutableListOf<FieldSpec>()
+    protected val fieldList = mutableListOf<FieldSpec>()
 
-    fun getFields(): List<FieldSpec> = _fields
-    override fun getFieldsNames(): Collection<String> = _fields.map { it.name }
+    fun getFields(): List<FieldSpec> = fieldList
+    override fun getFieldsNames(): Collection<String> = fieldList.map { it.name } + "_id"
 
     fun <T : Any> field(
         name: String,
         type: KClass<T>,
     ): CollectionFieldSpec<T> {
         val element = CollectionFieldSpec(name, type)
-        _fields.add(element)
+        fieldList.add(element)
         return element
     }
 
@@ -26,7 +26,7 @@ abstract class CollectionSpec : FieldNameProducer {
         spec: ASpec
     ): EmbeddedFieldSpec<A, ASpec> {
         val element = EmbeddedFieldSpec(name, spec.clazz, spec)
-        _fields.add(element)
+        fieldList.add(element)
         return element
     }
 
@@ -35,7 +35,7 @@ abstract class CollectionSpec : FieldNameProducer {
         type: KClass<T>,
     ): ArrayFieldSpec<I, T> {
         val element = ArrayFieldSpec(name, type)
-        _fields.add(element)
+        fieldList.add(element)
         return element
     }
 
@@ -127,6 +127,13 @@ abstract class CollectionSpec : FieldNameProducer {
 abstract class TypedCollectionSpec<T : Any>(
     val clazz: KClass<T>
 ) : CollectionSpec()
+
+@SpecDsl
+abstract class TypedEntitySpec<T : Any>(
+    clazz: KClass<T>
+) : TypedCollectionSpec<T>(clazz) {
+    override fun getFieldsNames(): Collection<String> = fieldList.map { it.name }
+}
 
 data class IndexList(
     val indices: List<IndexDefinition>,

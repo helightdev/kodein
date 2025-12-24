@@ -3,6 +3,7 @@ package dev.helight.kodein
 import dev.helight.kodein.dsl.crudScope
 import dev.helight.kodein.spec.BaseDocument
 import dev.helight.kodein.spec.TypedCollectionSpec
+import dev.helight.kodein.spec.TypedEntitySpec
 import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -40,7 +41,7 @@ interface TypedCollectionTests : DocumentDatabaseScope {
     data class Author(
         val name: String,
     ) {
-        companion object Spec : TypedCollectionSpec<Author>(Author::class) {
+        companion object Spec : TypedEntitySpec<Author>(Author::class) {
             val name = field(Author::name)
         }
     }
