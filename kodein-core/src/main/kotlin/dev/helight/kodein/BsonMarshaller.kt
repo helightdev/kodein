@@ -1,10 +1,5 @@
 package dev.helight.kodein
 
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import org.bson.BsonArray
 import org.bson.BsonBinary
 import org.bson.BsonBoolean
@@ -19,6 +14,7 @@ import org.bson.BsonString
 import org.bson.BsonValue
 import org.bson.types.ObjectId
 import kotlin.collections.iterator
+import kotlin.reflect.KClass
 import kotlin.time.Instant
 
 object BsonMarshaller {
@@ -48,6 +44,10 @@ object BsonMarshaller {
     }
 
     fun marshal(value: Any?): BsonValue {
+        return marshalOrNull(value) ?: throw IllegalArgumentException("Unsupported type: ${value!!::class}")
+    }
+
+    fun marshalOrNull(value: Any?): BsonValue? {
         if (value is BsonValue) return value
         return when (value) {
             is Map<*, *> -> BsonDocument().apply { for ((k, v) in value) put(k.toString(), marshal(v)) }
@@ -61,7 +61,14 @@ object BsonMarshaller {
             is Instant -> BsonDateTime(value.toEpochMilliseconds())
             is ObjectId -> BsonObjectId(value)
             null -> BsonNull.VALUE
-            else -> throw IllegalArgumentException("Unsupported type: ${value::class}")
+            else -> null
         }
+    }
+
+    fun <T> marshal(value: T?, clazz: Class<T>, kodein: Kodein?): BsonValue {
+        val bsonValue = marshalOrNull(value)
+        if (bsonValue != null) return bsonValue
+        requireNotNull(kodein) { "Kodein instance is required for custom type serialization." }
+        return kodein.encode(value!!, clazz)
     }
 }

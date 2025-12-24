@@ -19,22 +19,22 @@ import org.bson.BsonDocument
 import org.bson.BsonObjectId
 
 class CrudCollection<T : Any, Spec : TypedCollectionSpec<T>>(
-    val collection: DocumentCollection,
+    val untyped: DocumentCollection,
     internal val spec: Spec
 ) {
     private val clazz = spec.clazz.java
 
     private fun decode(document: BsonDocument): T {
-        val decoded = collection.kodein.decode(document, clazz)
+        val decoded = untyped.kodein.decode(document, clazz)
         if (decoded is BaseDocument) {
             decoded.bsonId = document["_id"]
-            decoded.document = collection.kodein.introspect(document)
+            decoded.document = untyped.kodein.introspect(document)
         }
         return decoded
     }
 
     private fun encode(value: T, generateId: Boolean = true): BsonDocument {
-        val document = collection.kodein.encode(value, clazz)
+        val document = untyped.kodein.encode(value, clazz)
         if (generateId) when (value) {
             is BaseDocument -> document["_id"] = value.bsonId ?: BsonObjectId()
             else -> document["_id"] = BsonObjectId()
@@ -44,21 +44,21 @@ class CrudCollection<T : Any, Spec : TypedCollectionSpec<T>>(
 
     suspend fun insert(value: T): T {
         val document = encode(value)
-        val success = collection.insert(document)
+        val success = untyped.insert(document)
         if (!success) throw CrudException("Failed to insert document")
         return decode(document)
     }
 
     suspend fun insertMany(values: List<T>): List<T> {
         val documents = values.map { encode(it) }
-        val insertedCount = collection.insert(documents)
+        val insertedCount = untyped.insert(documents)
         if (insertedCount != documents.size) throw CrudException("Failed to insert all documents")
         return documents.map { decode(it) }
     }
 
     suspend fun save(value: T): T {
         val document = encode(value, true)
-        val success = collection.replace(
+        val success = untyped.replace(
             filter = buildFilter { byId(document["_id"]) },
             document = document,
             upsert = true
@@ -75,29 +75,29 @@ class CrudCollection<T : Any, Spec : TypedCollectionSpec<T>>(
     }
 
     suspend fun count(block: FilterBuilder.() -> Unit = {}): Long {
-        return collection.count(block)
+        return untyped.count(block)
     }
 
     suspend fun exists(block: FilterBuilder.() -> Unit = {}): Boolean {
-        return collection.exists(block)
+        return untyped.exists(block)
     }
 
     suspend fun delete(block: FilterBuilder.() -> Unit): Int {
-        return collection.delete(block)
+        return untyped.delete(block)
     }
 
     suspend fun deleteById(id: BsonObjectId): Boolean {
-        return collection.deleteOne(buildFilter { byId(id) })
+        return untyped.deleteOne(buildFilter { byId(id) })
     }
 
     suspend fun deleteByIds(ids: List<BsonObjectId>): Int {
-        return collection.delete(idListFilter(ids))
+        return untyped.delete(idListFilter(ids))
     }
 
     suspend fun delete(value: T) {
         require(value is BaseDocument) { "Can only delete documents extending BaseDocument" }
         requireNotNull(value.bsonId)
-        val success = collection.deleteOne(buildFilter { byId(value.bsonId) })
+        val success = untyped.deleteOne(buildFilter { byId(value.bsonId) })
         if (!success) throw CrudException("Failed to delete document")
     }
 
@@ -105,23 +105,23 @@ class CrudCollection<T : Any, Spec : TypedCollectionSpec<T>>(
         require(values.all { it is BaseDocument && it.bsonId != null }) {
             "Can only delete documents extending BaseDocument with non-null IDs"
         }
-        val deletedCount = collection.delete(filter = idListFilter(values.map { (it as BaseDocument).bsonId!! }))
+        val deletedCount = untyped.delete(filter = idListFilter(values.map { (it as BaseDocument).bsonId!! }))
         if (deletedCount != values.size) throw CrudException("Failed to delete all documents")
     }
 
     suspend fun update(block: SelectiveUpdateBuilder.() -> Unit): Int {
-        return collection.update(block)
+        return untyped.update(block)
     }
 
     suspend fun updateOne(block: SelectiveUpdateBuilder.() -> Unit): Boolean {
-        return collection.updateOne(block)
+        return untyped.updateOne(block)
     }
 
     suspend fun update(value: T, block: UpdateBuilder.() -> Unit) {
         require(value is BaseDocument) { "Can only update documents extending BaseDocument" }
         requireNotNull(value.bsonId)
         val update = buildUpdate(block)
-        val success = collection.updateOne(
+        val success = untyped.updateOne(
             filter = idFilter(value.bsonId),
             update = update
         )
@@ -132,7 +132,7 @@ class CrudCollection<T : Any, Spec : TypedCollectionSpec<T>>(
         require(value is BaseDocument) { "Can only update documents extending BaseDocument" }
         requireNotNull(value.bsonId)
         val update = buildUpdate(block)
-        val updatedDocument = collection.updateOneReturning(
+        val updatedDocument = untyped.updateOneReturning(
             filter = idFilter(value.bsonId),
             update = update
         ) ?: return null
@@ -140,7 +140,7 @@ class CrudCollection<T : Any, Spec : TypedCollectionSpec<T>>(
     }
 
     suspend fun updateReturning(block: SelectiveUpdateBuilder.() -> Unit): T? {
-        val updatedDocument = collection.updateOneReturning(block) ?: return null
+        val updatedDocument = untyped.updateOneReturning(block) ?: return null
         return updatedDocument.asClass(clazz)
     }
 
@@ -151,14 +151,14 @@ class CrudCollection<T : Any, Spec : TypedCollectionSpec<T>>(
         return updateByIds(values.map { (it as BaseDocument).bsonId!! }, block = block)
     }
 
-    suspend fun updateByIds(ids: List<Any>, block: UpdateBuilder.() -> Unit): Int = collection.update(
+    suspend fun updateByIds(ids: List<Any>, block: UpdateBuilder.() -> Unit): Int = untyped.update(
         filter = idListFilter(ids),
         update = buildUpdate(block)
     )
 
     suspend fun updateById(id: Any, block: UpdateBuilder.() -> Unit) {
         val bsonId = BsonMarshaller.marshal(id)
-        val success = collection.updateOne {
+        val success = untyped.updateOne {
             whereId(bsonId)
             block()
         }
@@ -166,33 +166,33 @@ class CrudCollection<T : Any, Spec : TypedCollectionSpec<T>>(
     }
 
     suspend fun find(): Flow<T> {
-        return collection.find().map { it.asClass(clazz) }
+        return untyped.find().map { it.asClass(clazz) }
     }
 
     suspend fun find(block: FindBuilder.() -> Unit): Flow<T> {
-        return collection.find(block).map { it.asClass(clazz) }
+        return untyped.find(block).map { it.asClass(clazz) }
     }
 
     suspend fun findOne(block: FindBuilder.() -> Unit): T? {
-        return collection.findOne(block)?.asClass(clazz)
+        return untyped.findOne(block)?.asClass(clazz)
     }
 
     suspend fun findById(any: Any): T? {
         val id = BsonMarshaller.marshal(any)
-        val document = collection.findOne(buildFilter { byId(id) }) ?: return null
+        val document = untyped.findOne(buildFilter { byId(id) }) ?: return null
         return document.asClass(clazz)
     }
 
     suspend fun findByIds(ids: List<Any>): List<T> {
-        return collection.find(idListFilter(ids)).map { it.asClass(clazz) }.toList()
+        return untyped.find(idListFilter(ids)).map { it.asClass(clazz) }.toList()
     }
 
     suspend fun findPaginated(cursor: KPageCursor): KPage<T> {
-        return collection.findPaginated(cursor).mapItems { it.asClass(clazz) }
+        return untyped.findPaginated(cursor).mapItems { it.asClass(clazz) }
     }
 
     suspend fun findPaginated(cursor: KPageCursor, block: FindBuilder.() -> Unit): KPage<T> {
-        return collection.findPaginated(cursor, block).mapItems { it.asClass(clazz) }
+        return untyped.findPaginated(cursor, block).mapItems { it.asClass(clazz) }
     }
 }
 

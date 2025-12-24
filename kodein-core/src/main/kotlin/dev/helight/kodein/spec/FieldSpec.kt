@@ -98,9 +98,10 @@ class EmbeddedFieldSpec<T : Any, Spec : TypedCollectionSpec<T>>(
     override fun getFieldsNames(): Collection<String> = spec.getFieldsNames().map { "${this.name}.${it}" }
 }
 
-class ArrayFieldSpec<I, T : Collection<I>>(
+class ArrayFieldSpec<I : Any, T : Collection<I>>(
     name: String,
     type: KClass<T>,
+    val elementType: KClass<I>,
     var indexType: FieldIndexType = FieldIndexType.NONE,
     var indexName: String? = null,
 ) : TypeAwareFieldSpec<T>(name, type) {

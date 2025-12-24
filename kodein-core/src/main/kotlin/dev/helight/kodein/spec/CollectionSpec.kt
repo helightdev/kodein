@@ -7,6 +7,7 @@ import kotlin.reflect.jvm.jvmErasure
 
 @SpecDsl
 abstract class CollectionSpec : FieldNameProducer {
+
     protected val fieldList = mutableListOf<FieldSpec>()
 
     fun getFields(): List<FieldSpec> = fieldList
@@ -30,18 +31,20 @@ abstract class CollectionSpec : FieldNameProducer {
         return element
     }
 
-    fun <I, T : Collection<I>> arrayField(
+    fun <I : Any, T : Collection<I>> arrayField(
         name: String,
         type: KClass<T>,
+        elementType: KClass<I>
     ): ArrayFieldSpec<I, T> {
-        val element = ArrayFieldSpec(name, type)
+        val element = ArrayFieldSpec(name, type, elementType)
         fieldList.add(element)
         return element
     }
 
     inline fun <reified A : Any> field(name: String) = field(name, A::class)
 
-    private fun getSerialName(property: KProperty<*>): String {
+    @PublishedApi
+    internal fun getSerialName(property: KProperty<*>): String {
         val annotation = property.annotations.filterIsInstance<SerialName>().firstOrNull()
         return annotation?.value ?: property.name
     }
@@ -69,16 +72,19 @@ abstract class CollectionSpec : FieldNameProducer {
         spec: ASpec
     ) = embeddedField(getSerialName(property), spec)
 
-    fun <I, T : Collection<I>> arrayField(
+    inline fun <reified I : Any, reified T : Collection<I>> arrayField(
         property: KProperty<T>
-    ) = arrayField(getSerialName(property), getFieldType(property))
+    ) = arrayField(getSerialName(property), T::class, I::class)
 
     @JvmName("arrayFieldNullable")
-    fun <I, T : Collection<I>> arrayField(
+    inline fun <reified I : Any, reified T : Collection<I>> arrayField(
         property: KProperty<T?>
-    ) = arrayField(getSerialName(property), getFieldType(property))
+    ) = arrayField(getSerialName(property), T::class, I::class)
 
-    internal fun collectIndices(textIndices: MutableSet<String>, path: String? = null): Map<String, Pair<String, FieldIndexType>> {
+    internal fun collectIndices(
+        textIndices: MutableSet<String>,
+        path: String? = null
+    ): Map<String, Pair<String, FieldIndexType>> {
         val indices = mutableMapOf<String, Pair<String, FieldIndexType>>()
         for (field in getFields()) {
             if (field is CollectionFieldSpec<*>) {
@@ -89,15 +95,14 @@ abstract class CollectionSpec : FieldNameProducer {
                     field.indexName ?: fieldPath.replace(".", "_"),
                     field.indexType
                 )
-            } else if (field is ArrayFieldSpec<*,*>) {
+            } else if (field is ArrayFieldSpec<*, *>) {
                 val fieldPath = path?.let { "$it.${field.name}" } ?: field.name
                 if (field.indexType == FieldIndexType.NONE) continue
                 indices[field.name] = Pair(
                     field.indexName ?: fieldPath.replace(".", "_"),
                     field.indexType
                 )
-            }
-            else if (field is EmbeddedFieldSpec<*, *>) {
+            } else if (field is EmbeddedFieldSpec<*, *>) {
                 val embeddedPath = if (path == null) field.name else "$path.${field.name}"
                 val embeddedIndices = field.spec.collectIndices(textIndices, embeddedPath)
                 indices.putAll(embeddedIndices)

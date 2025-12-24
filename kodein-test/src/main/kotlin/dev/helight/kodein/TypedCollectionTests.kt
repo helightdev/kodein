@@ -6,11 +6,10 @@ import dev.helight.kodein.spec.TypedCollectionSpec
 import dev.helight.kodein.spec.TypedEntitySpec
 import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
-import org.bson.BsonValue
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 interface TypedCollectionTests : DocumentDatabaseScope {
 
@@ -242,6 +241,60 @@ interface TypedCollectionTests : DocumentDatabaseScope {
                 tags size 2
             }.toList()
             assertEquals(3, size.size)
+        }
+    }
+
+    @Test
+    fun `Update array and embedded fields`() = databaseScope {
+        InventoryItem.crudScope(getCollection("typed_inventory_items_update")) {
+            it.insertMany(inventory)
+
+            val updatedCount = it.update {
+                where { item eq "planner" }
+                tags set listOf("updated", "tags")
+                dimCm set listOf(99.9, 88.8)
+            }
+            assertEquals(1, updatedCount)
+
+            val updatedItem = it.findOne {
+                item eq "planner"
+            }
+            assertNotNull(updatedItem)
+            assertEquals(setOf("updated", "tags"), updatedItem.tags)
+            assertEquals(listOf(99.9, 88.8), updatedItem.dimCm)
+        }
+
+        Rating.crudScope(getCollection("ratings_update_embedded")) {
+            it.insertMany(ratings)
+
+            val updatedCount = it.update {
+                where { author.select { name } eq "Bob" }
+                author set Author("Robert")
+            }
+            assertEquals(1, updatedCount)
+
+            val updatedRating = it.findOne {
+                author.select { name } eq "Robert"
+            }
+            assertNotNull(updatedRating)
+            assertEquals("Robert", updatedRating.author.name)
+        }
+    }
+
+    @Test
+    fun `Dsl based projections`() = databaseScope {
+        Movie.crudScope(getCollection("movies_projections")) {
+            it.insertMany(movies)
+            val titlesOnly = it.untyped.find {
+                sortAsc(Movie.title)
+                fields(Movie, rating)
+            }.toList()
+            assertEquals(4, titlesOnly.size)
+            for (doc in titlesOnly) {
+                assertNotNull(doc.bsonId)
+                assertNotNull(doc.get("title"))
+                assertNull(doc.get("rating"))
+            }
         }
     }
 

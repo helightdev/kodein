@@ -82,27 +82,27 @@ interface TypeAwareFieldSpecFilterBuilder : FilterBuilderBase {
 }
 
 interface ArrayFieldSpecFilterBuilder : FilterBuilderBase {
-    infix fun <I> ArrayFieldSpec<I, *>.eq(collection: Collection<I>?) {
+    infix fun <I: Any> ArrayFieldSpec<I, *>.eq(collection: Collection<I>?) {
         filterList.add(Filter.Field.Eq(this.name, BsonMarshaller.marshal(collection)))
     }
 
-    infix fun <I> ArrayFieldSpec<I, *>.notEq(collection: Collection<I>?) {
+    infix fun <I: Any> ArrayFieldSpec<I, *>.notEq(collection: Collection<I>?) {
         filterList.add(Filter.Field.Ne(this.name, BsonMarshaller.marshal(collection)))
     }
 
-    infix fun <I> ArrayFieldSpec<I, *>.contains(value: I?) {
+    infix fun <I: Any> ArrayFieldSpec<I, *>.contains(value: I?) {
         filterList.add(Filter.Field.ArrCont(this.name, BsonMarshaller.marshal(value)))
     }
 
-    infix fun <I> ArrayFieldSpec<I, *>.notContains(value: I?) {
+    infix fun <I: Any> ArrayFieldSpec<I, *>.notContains(value: I?) {
         filterList.add(Filter.Field.ArrNotCont(this.name, BsonMarshaller.marshal(value)))
     }
 
-    infix fun <I> ArrayFieldSpec<I, *>.size(size: Int) {
+    infix fun <I: Any> ArrayFieldSpec<I, *>.size(size: Int) {
         filterList.add(Filter.Field.ArrSize(this.name, BsonInt32(size)))
     }
 
-    infix fun <I> ArrayFieldSpec<I, *>.intersects(values: Collection<I>) {
+    infix fun <I: Any> ArrayFieldSpec<I, *>.intersects(values: Collection<I>) {
         filterList.add(
             Filter.Field.ArrComp(
                 this.name,
@@ -112,7 +112,7 @@ interface ArrayFieldSpecFilterBuilder : FilterBuilderBase {
         )
     }
 
-    infix fun <I> ArrayFieldSpec<I, *>.notIntersects(values: Collection<I>) {
+    infix fun <I: Any> ArrayFieldSpec<I, *>.notIntersects(values: Collection<I>) {
         filterList.add(
             Filter.Field.ArrComp(
                 this.name,
@@ -122,7 +122,7 @@ interface ArrayFieldSpecFilterBuilder : FilterBuilderBase {
         )
     }
 
-    infix fun <I> ArrayFieldSpec<I, *>.containsAll(values: Collection<I>) {
+    infix fun <I: Any> ArrayFieldSpec<I, *>.containsAll(values: Collection<I>) {
         filterList.add(
             Filter.Field.ArrComp(
                 this.name,
@@ -132,7 +132,7 @@ interface ArrayFieldSpecFilterBuilder : FilterBuilderBase {
         )
     }
 
-    infix fun <I> ArrayFieldSpec<I, *>.equalsSet(values: Collection<I>) {
+    infix fun <I: Any> ArrayFieldSpec<I, *>.equalsSet(values: Collection<I>) {
         filterList.add(
             Filter.Field.ArrComp(
                 this.name,

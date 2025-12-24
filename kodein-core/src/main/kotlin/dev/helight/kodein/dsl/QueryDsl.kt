@@ -11,6 +11,7 @@ import dev.helight.kodein.collection.FindOptions
 import dev.helight.kodein.spec.PrimitiveFieldSpec
 import dev.helight.kodein.spec.TypedCollectionSpec
 import dev.helight.kodein.collection.Update
+import dev.helight.kodein.spec.ArrayFieldSpec
 import org.bson.BsonArray
 import org.bson.BsonDocument
 import org.bson.BsonInt32
@@ -52,7 +53,8 @@ interface FilterBuilderBase {
 }
 
 @QueryDsl
-interface FilterBuilder : FilterBuilderBase, DumbFieldSpecFilterBuilder, TypeAwareFieldSpecFilterBuilder, ArrayFieldSpecFilterBuilder {
+interface FilterBuilder : FilterBuilderBase, DumbFieldSpecFilterBuilder, TypeAwareFieldSpecFilterBuilder,
+    ArrayFieldSpecFilterBuilder {
 
     fun addNative(value: Any) {
         filterList.add(Filter.Native(value))
@@ -361,29 +363,40 @@ interface FieldSpecUpdateBuilder : UpdateBuilderBase {
         fieldUpdates.add(Update.Field.Inc(this.name, value))
     }
 
-    infix fun <T : Any> PrimitiveFieldSpec<T>.set(value: T?) {
+    infix fun FieldSpec.setRaw(value: Any?) =
         fieldUpdates.add(Update.Field.Set(this.name, BsonMarshaller.marshal(value)))
+
+    infix fun <T : Any> PrimitiveFieldSpec<T>.set(value: T?) {
+        fieldUpdates.add(Update.Field.Set(this.name, BsonMarshaller.marshal(value, this.type.java, kodein)))
     }
+
+    infix fun <T : Any> EmbeddedFieldSpec<T, *>.set(value: T?) {
+        fieldUpdates.add(Update.Field.Set(this.name, BsonMarshaller.marshal(value, this.type.java, kodein)))
+    }
+
+    infix fun <T : Any> ArrayFieldSpec<T, *>.set(value: Collection<T>?) {
+        fieldUpdates.add(Update.Field.Set(this.name, value?.map {
+            BsonMarshaller.marshal(it, this.elementType.java, kodein)
+        }?.let { BsonArray(it) } ?: BsonNull.VALUE))
+    }
+
+    infix fun FieldSpec.setRawDefault(value: Any?) =
+        fieldUpdates.add(Update.Field.SetOnInsert(this.name, BsonMarshaller.marshal(value)))
 
     infix fun <T : Any> PrimitiveFieldSpec<T>.setDefault(value: T?) {
-        fieldUpdates.add(Update.Field.SetOnInsert(this.name, BsonMarshaller.marshal(value)))
+        fieldUpdates.add(Update.Field.SetOnInsert(this.name, BsonMarshaller.marshal(value, this.type.java, kodein)))
     }
 
-    private fun <T : Any, S : TypedCollectionSpec<T>> encodeEmbedded(value: T?, spec: S): BsonValue = when {
-        kodein == null -> throw IllegalStateException("Cannot use EmbeddedFieldSpec.set without kodein context")
-        value == null -> BsonNull.VALUE
-        else -> kodein!!.encode(value, spec.clazz.java)
+    infix fun <T : Any> EmbeddedFieldSpec<T, *>.setDefault(value: T?) {
+        fieldUpdates.add(Update.Field.SetOnInsert(this.name, BsonMarshaller.marshal(value, this.type.java, kodein)))
     }
 
-    infix fun <T : Any, S : TypedCollectionSpec<T>> EmbeddedFieldSpec<T, S>.set(value: T?) {
-        val value = encodeEmbedded(value, this.spec)
-        fieldUpdates.add(Update.Field.Set(this.name, value))
+    infix fun <T : Any> ArrayFieldSpec<T, *>.setDefault(value: Collection<T>?) {
+        fieldUpdates.add(Update.Field.SetOnInsert(this.name, value?.map {
+            BsonMarshaller.marshal(it, this.elementType.java, kodein)
+        }?.let { BsonArray(it) } ?: BsonNull.VALUE))
     }
 
-    infix fun <T : Any, S : TypedCollectionSpec<T>> EmbeddedFieldSpec<T, S>.setDefault(value: T?) {
-        val value = encodeEmbedded(value, this.spec)
-        fieldUpdates.add(Update.Field.SetOnInsert(this.name, value))
-    }
 }
 
 @QueryDsl
