@@ -168,13 +168,17 @@ class MemoryDocumentCollection(
         if (filter != null) seq = seq.filter { filter.eval(it) }
         return MemoryFinder.sortCursorAndProject(options, seq).map {
             KDocument(kodein, it)
-        }.asFlow()
+        }.toList().asFlow()
     }
 
     override suspend fun findOne(
         filter: Filter,
         options: FindOptions
     ): KDocument? = mutex.read {
-        return find(filter, options.copy(limit = 1)).firstOrNull()
+        var seq = delegate.asSequence()
+        if (filter != null) seq = seq.filter { filter.eval(it) }
+        return MemoryFinder.sortCursorAndProject(options, seq).map {
+            KDocument(kodein, it)
+        }.firstOrNull()
     }
 }
