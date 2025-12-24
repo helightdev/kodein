@@ -207,23 +207,23 @@ interface DocumentDatabaseContract : DocumentDatabaseScope, CollectionFindTests,
 
         val pageSize = 5
         val page1 = collection.findPaginated(
-            cursor = KPageCursor(1, pageSize),
+            cursor = KPageCursor(0, pageSize),
             options = FindOptions().sortByAsc("index")
         )
         assertEquals(pageSize, page1.items.count())
         assertEquals(3, page1.pageCount)
-        assertEquals(1, page1.page)
+        assertEquals(0, page1.page)
         val first = page1.items.firstOrNull()
         assertNotNull(first)
         assertEquals(1, first.getInt("index"))
 
         val page2 = collection.findPaginated(
-            cursor = KPageCursor(2, pageSize),
+            cursor = KPageCursor(1, pageSize),
             options = FindOptions().sortByAsc("index")
         )
         assertEquals(pageSize, page2.items.count())
         assertEquals(3, page2.pageCount)
-        assertEquals(2, page2.page)
+        assertEquals(1, page2.page)
         val firstPage2 = page2.items.firstOrNull()
         assertNotNull(firstPage2)
         assertEquals(6, firstPage2.getInt("index"))

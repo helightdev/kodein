@@ -10,16 +10,16 @@ class KPage<T>(
     val items: List<T>
 ) : List<T> by items {
     val pageCount: Int
-        get() = if (itemCount == 0L) 1 else ((itemCount - 1) / pageSize + 1).toInt()
+        get() = if (itemCount == 0L) 0 else ((itemCount - 1) / pageSize + 1).toInt()
 
     val cursor: KPageCursor
         get() = KPageCursor(page = page, pageSize = pageSize)
 
     val next: KPageCursor?
-        get() = if (page < pageCount) KPageCursor(page + 1, pageSize) else null
+        get() = if (page + 1 < pageCount) KPageCursor(page + 1, pageSize) else null
 
     val previous: KPageCursor?
-        get() = if (page > 1) KPageCursor(page - 1, pageSize) else null
+        get() = if (page > 0) KPageCursor(page - 1, pageSize) else null
 
     fun <R> mapItems(transform: (T) -> R): KPage<R> = KPage(
         itemCount = itemCount,
