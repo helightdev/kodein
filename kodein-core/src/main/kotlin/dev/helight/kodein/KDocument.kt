@@ -138,9 +138,5 @@ class KDocument(
     override fun toString(): String {
         return "KDocument(bson=$bson)"
     }
-
-    fun <T> toValue(value: T): KValue<T> {
-        return KValue(kodein, this, value)
-    }
 }
 
