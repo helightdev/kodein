@@ -44,19 +44,6 @@ sealed class QueryPlan {
         override val filter: Filter? = remainingFilter
         override val estimatedCost: Double = expectedResults.toDouble() * 1.2 // text search overhead
     }
-
-    /**
-     * Composite plan - uses multiple strategies
-     */
-    data class CompositePlan(
-        val indexScans: List<IndexScan>,
-        val textScans: List<TextIndexScan>,
-        val remainingFilter: Filter?,
-        val expectedResults: Int
-    ) : QueryPlan() {
-        override val filter: Filter? = remainingFilter
-        override val estimatedCost: Double = expectedResults.toDouble() * 1.05
-    }
 }
 
 /**

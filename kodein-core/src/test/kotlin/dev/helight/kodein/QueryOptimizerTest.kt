@@ -118,9 +118,8 @@ class QueryOptimizerTest {
         
         assertEquals("INDEX_SCAN", explanation.planType)
         assertTrue(explanation.optimized)
-        // Should use the unique index (email_idx) as it's more selective
-        assertTrue(explanation.indexesUsed.contains("email_idx") || 
-                   explanation.indexesUsed.contains("status_idx"))
+        // Should use the unique index (email_idx) as it's more selective than status_idx
+        assertEquals(listOf("email_idx"), explanation.indexesUsed)
     }
 
     @Test

@@ -189,10 +189,6 @@ class MemoryDocumentCollection(
                     filtered
                 }
             }
-            is QueryPlan.CompositePlan -> {
-                // For now, fall back to full scan for composite plans
-                delegate.asSequence().filter { filter.eval(it) }
-            }
         }
     }
 

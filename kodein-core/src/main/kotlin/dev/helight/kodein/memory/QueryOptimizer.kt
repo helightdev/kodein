@@ -217,19 +217,6 @@ class QueryOptimizer(
                     "hasRemainingFilter" to (plan.remainingFilter != null)
                 )
             )
-            is QueryPlan.CompositePlan -> QueryExplanation(
-                planType = "COMPOSITE_PLAN",
-                indexesUsed = plan.indexScans.map { it.indexName } + 
-                             plan.textScans.flatMap { it.indexedFields },
-                estimatedCost = plan.estimatedCost,
-                optimized = true,
-                details = mapOf(
-                    "indexScans" to plan.indexScans.size,
-                    "textScans" to plan.textScans.size,
-                    "expectedResults" to plan.expectedResults,
-                    "hasRemainingFilter" to (plan.remainingFilter != null)
-                )
-            )
         }
     }
 }
