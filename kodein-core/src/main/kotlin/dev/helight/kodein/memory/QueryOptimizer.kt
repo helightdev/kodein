@@ -35,10 +35,21 @@ class QueryOptimizer(
     }
 
     /**
+     * Flatten nested AND filters into a single list
+     */
+    private fun flattenConjunction(filter: Filter): List<Filter> {
+        return when (filter) {
+            is Filter.And -> filter.filters.flatMap { flattenConjunction(it) }
+            else -> listOf(filter)
+        }
+    }
+
+    /**
      * Optimize conjunctive queries (AND filters)
      */
     private fun optimizeConjunction(andFilter: Filter.And): QueryPlan {
-        val filters = andFilter.filters
+        // Flatten nested AND filters first
+        val filters = flattenConjunction(andFilter)
         
         // Separate indexable and non-indexable filters
         val indexableFilters = mutableListOf<Filter.Field>()
