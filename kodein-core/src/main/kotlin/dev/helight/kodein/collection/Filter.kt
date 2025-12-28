@@ -19,15 +19,30 @@ sealed class Filter {
      * Text search filter - searches across all text-indexed fields
      * Similar to MongoDB's $text operator
      */
-    class Text(val searchTerm: BsonString) : Filter() {
+    class Text(
+        val searchTerm: BsonString,
+        val indexedFields: Set<String>? = null
+    ) : Filter() {
         // Cache the lowercase search term for better performance
         private val searchTermLowercase = searchTerm.value.lowercase()
         
         /**
-         * Evaluate text search across all string fields in the document
+         * Evaluate text search across text-indexed fields or all string fields
          */
         fun evalText(document: BsonDocument): Boolean {
-            // Search through all string fields in the document
+            // If indexedFields is specified, only search those fields
+            if (indexedFields != null && indexedFields.isNotEmpty()) {
+                return indexedFields.any { fieldPath ->
+                    val fieldValue = document.getEmbedded(fieldPath)
+                    if (fieldValue is BsonString) {
+                        fieldValue.value.lowercase().contains(searchTermLowercase)
+                    } else {
+                        false
+                    }
+                }
+            }
+            
+            // Otherwise, search through all string fields in the document
             return document.values.any { value ->
                 if (value is BsonString) {
                     value.value.lowercase().contains(searchTermLowercase)

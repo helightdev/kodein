@@ -182,4 +182,40 @@ class TextIndexTest {
         // Only exact token matches, not partial
         assertEquals(1, results.size)
     }
+
+    @Test
+    fun `test text index only searches indexed fields`() = runBlocking {
+        val indexList = IndexList(
+            indices = emptyList(),
+            textIndices = setOf("description")  // Only description is indexed
+        )
+        collection.setIndices(indexList)
+        
+        // Insert documents with both indexed (description) and non-indexed (title) fields
+        collection.insert(buildDocument { 
+            "title" put "contains keyword in title"
+            "description" put "this is the description"
+        })
+        collection.insert(buildDocument { 
+            "title" put "no match here"
+            "description" put "this has the keyword"
+        })
+        collection.insert(buildDocument { 
+            "title" put "keyword in both"
+            "description" put "keyword also here"
+        })
+        
+        // Search for "keyword" - should only find docs where it's in the INDEXED field (description)
+        val filter = Filter.Text(BsonString("keyword"))
+        val results = collection.find(filter).toList()
+        
+        // Should only return the 2 documents where "keyword" is in the description field
+        // NOT the first document where "keyword" is only in the title
+        assertEquals(2, results.size)
+        assertTrue(results.all { it.getString("description")?.contains("keyword") == true })
+        assertFalse(results.any { 
+            it.getString("description") == "this is the description" && 
+            it.getString("title")?.contains("keyword") == true
+        })
+    }
 }

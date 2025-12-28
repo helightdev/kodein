@@ -181,8 +181,10 @@ class MemoryDocumentCollection(
             }
             is QueryPlan.TextIndexScan -> {
                 val candidates = getTextCandidates(plan.textFilter)
+                // Create a filter with indexed fields specified for proper evaluation
+                val textFilterWithFields = Filter.Text(plan.textFilter.searchTerm, plan.indexedFields)
                 // Always evaluate the text filter on candidates to ensure they still match
-                val filtered = candidates.filter { plan.textFilter.eval(it) }
+                val filtered = candidates.filter { textFilterWithFields.eval(it) }
                 if (plan.remainingFilter != null) {
                     filtered.filter { plan.remainingFilter.eval(it) }
                 } else {
