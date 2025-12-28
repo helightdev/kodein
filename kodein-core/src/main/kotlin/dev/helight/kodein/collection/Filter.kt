@@ -6,6 +6,7 @@ import org.bson.BsonArray
 import org.bson.BsonDocument
 import org.bson.BsonInt32
 import org.bson.BsonNumber
+import org.bson.BsonString
 import org.bson.BsonValue
 
 sealed class Filter {
@@ -141,6 +142,16 @@ sealed class Filter {
                 }
             }
 
+        }
+
+        class Text(path: String, override val value: BsonString) : Field(path) {
+            override fun evalField(document: BsonDocument): Boolean {
+                val fieldValue = document.getEmbedded(path) ?: return false
+                if (fieldValue !is BsonString) return false
+                val searchTerm = value.value.lowercase()
+                val fieldText = fieldValue.value.lowercase()
+                return fieldText.contains(searchTerm)
+            }
         }
 
         abstract fun evalField(document: BsonDocument): Boolean
