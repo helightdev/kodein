@@ -174,7 +174,7 @@ class QueryOptimizerTest {
         collection.insert(buildDocument { "title" put "Product2"; "description" put "Great quality" })
         collection.insert(buildDocument { "title" put "Product3"; "description" put "Amazing features" })
         
-        val filter = Filter.Field.Text("description", BsonString("amazing"))
+        val filter = Filter.Text(BsonString("amazing"))
         val explanation = collection.explain(filter)
         
         assertEquals("TEXT_INDEX_SCAN", explanation.planType)

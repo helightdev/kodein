@@ -218,19 +218,20 @@ class MemoryDocumentCollection(
         }
     }
 
-    private fun getTextCandidates(filter: Filter.Field.Text): Sequence<BsonDocument> {
-        val textIndex = textIndices[filter.path] ?: return emptySequence()
-        val searchTokens = tokenize(filter.value.value)
+    private fun getTextCandidates(filter: Filter.Text): Sequence<BsonDocument> {
+        val searchTokens = tokenize(filter.searchTerm.value)
         
         if (searchTokens.isEmpty()) return emptySequence()
         
-        // Return documents that contain any of the search tokens
-        // These candidates will be further filtered by the Text filter evaluation
-        val candidates = searchTokens.flatMap { token ->
-            textIndex[token]?.toList() ?: emptyList()
-        }.toSet()
+        // Collect documents from all text indices that match any search token
+        val candidateSet = mutableSetOf<BsonDocument>()
+        for ((_, textIndex) in textIndices) {
+            for (token in searchTokens) {
+                textIndex[token]?.let { candidateSet.addAll(it) }
+            }
+        }
         
-        return candidates.asSequence()
+        return candidateSet.asSequence()
     }
 
     /**

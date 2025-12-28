@@ -29,6 +29,7 @@ class QueryOptimizer(
 
         return when (filter) {
             is Filter.And -> optimizeConjunction(filter)
+            is Filter.Text -> optimizeTextFilter(filter)
             is Filter.Field -> optimizeSingleField(filter)
             else -> QueryPlan.FullScan(filter, documentCount)
         }
@@ -53,13 +54,13 @@ class QueryOptimizer(
         
         // Separate indexable and non-indexable filters
         val indexableFilters = mutableListOf<Filter.Field>()
-        val textFilters = mutableListOf<Filter.Field.Text>()
+        val textFilters = mutableListOf<Filter.Text>()
         val nonIndexableFilters = mutableListOf<Filter>()
 
         for (f in filters) {
             when (f) {
-                is Filter.Field.Text -> {
-                    if (textIndices.contains(f.path)) {
+                is Filter.Text -> {
+                    if (textIndices.isNotEmpty()) {
                         textFilters.add(f)
                     } else {
                         nonIndexableFilters.add(f)
@@ -98,18 +99,22 @@ class QueryOptimizer(
     }
 
     /**
+     * Optimize a text filter
+     */
+    private fun optimizeTextFilter(textFilter: Filter.Text): QueryPlan {
+        return if (textIndices.isNotEmpty()) {
+            val expectedResults = estimateTextResults(textFilter)
+            QueryPlan.TextIndexScan(textIndices, textFilter, null, expectedResults)
+        } else {
+            QueryPlan.FullScan(textFilter, documentCount)
+        }
+    }
+
+    /**
      * Optimize a single field filter
      */
     private fun optimizeSingleField(fieldFilter: Filter.Field): QueryPlan {
         return when (fieldFilter) {
-            is Filter.Field.Text -> {
-                if (textIndices.contains(fieldFilter.path)) {
-                    val expectedResults = estimateTextResults(fieldFilter)
-                    QueryPlan.TextIndexScan(textIndices, fieldFilter, null, expectedResults)
-                } else {
-                    QueryPlan.FullScan(fieldFilter, documentCount)
-                }
-            }
             is Filter.Field.Eq, is Filter.Field.Comp, is Filter.Field.In -> {
                 if (indices.containsKey(fieldFilter.path)) {
                     val indexName = indices[fieldFilter.path]!!.first.indexName
@@ -162,7 +167,7 @@ class QueryOptimizer(
     /**
      * Estimate results for text filter
      */
-    private fun estimateTextResults(filter: Filter.Field.Text): Int {
+    private fun estimateTextResults(filter: Filter.Text): Int {
         return (documentCount * TEXT_SEARCH_SELECTIVITY).toInt().coerceAtLeast(1)
     }
 
@@ -212,7 +217,7 @@ class QueryOptimizer(
                 optimized = true,
                 details = mapOf(
                     "indexedFields" to plan.indexedFields,
-                    "textField" to plan.textFilter.path,
+                    "searchTerm" to plan.textFilter.searchTerm.value,
                     "expectedResults" to plan.expectedResults,
                     "hasRemainingFilter" to (plan.remainingFilter != null)
                 )

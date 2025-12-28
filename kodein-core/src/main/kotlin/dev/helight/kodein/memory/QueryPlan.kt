@@ -37,7 +37,7 @@ sealed class QueryPlan {
      */
     data class TextIndexScan(
         val indexedFields: Set<String>,
-        val textFilter: Filter.Field.Text,
+        val textFilter: Filter.Text,
         val remainingFilter: Filter?,
         val expectedResults: Int
     ) : QueryPlan() {

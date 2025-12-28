@@ -131,13 +131,13 @@ class ExplainTest {
             })
         }
         
-        val filter = Filter.Field.Text("description", BsonString("content"))
+        val filter = Filter.Text(BsonString("content"))
         val explanation = collection.explain(filter)
         
         assertEquals("TEXT_INDEX_SCAN", explanation.planType)
         assertTrue(explanation.optimized)
         assertTrue(explanation.indexesUsed.contains("description"))
-        assertTrue(explanation.details.containsKey("textField"))
+        assertTrue(explanation.details.containsKey("searchTerm"))
     }
 
     @Test

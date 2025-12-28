@@ -29,7 +29,7 @@ class TextIndexTest {
         collection.insert(buildDocument { "title" put "Test Document"; "content" put "Hello everyone" })
         
         // Test text filter without index (full scan)
-        val filter = Filter.Field.Text("title", BsonString("world"))
+        val filter = Filter.Text(BsonString("world"))
         val results = collection.find(filter).toList()
         
         assertEquals(2, results.size)
@@ -43,7 +43,7 @@ class TextIndexTest {
         collection.insert(buildDocument { "description" put "lowercase text" })
         collection.insert(buildDocument { "description" put "MiXeD CaSe TeXt" })
         
-        val filter = Filter.Field.Text("description", BsonString("text"))
+        val filter = Filter.Text(BsonString("text"))
         val results = collection.find(filter).toList()
         
         assertEquals(3, results.size)
@@ -62,7 +62,7 @@ class TextIndexTest {
         collection.insert(buildDocument { "title" put "Doc3"; "content" put "quick thinking required" })
         collection.insert(buildDocument { "title" put "Doc4"; "content" put "something else entirely" })
         
-        val filter = Filter.Field.Text("content", BsonString("quick"))
+        val filter = Filter.Text(BsonString("quick"))
         val results = collection.find(filter).toList()
         
         assertEquals(2, results.size)
@@ -83,7 +83,7 @@ class TextIndexTest {
         collection.insert(buildDocument { "name" put "Product3"; "description" put "premium features at competitive prices" })
         
         // Search for "quality"
-        val filter = Filter.Field.Text("description", BsonString("quality"))
+        val filter = Filter.Text(BsonString("quality"))
         val results = collection.find(filter).toList()
         
         assertEquals(2, results.size)
@@ -95,7 +95,7 @@ class TextIndexTest {
     fun `test text filter with non-string field`() = runBlocking {
         collection.insert(buildDocument { "title" put "Document"; "value" put 123 })
         
-        val filter = Filter.Field.Text("value", BsonString("123"))
+        val filter = Filter.Text(BsonString("123"))
         val results = collection.find(filter).toList()
         
         // Should return empty as value is not a string
@@ -106,7 +106,7 @@ class TextIndexTest {
     fun `test text filter with missing field`() = runBlocking {
         collection.insert(buildDocument { "title" put "Document" })
         
-        val filter = Filter.Field.Text("description", BsonString("test"))
+        val filter = Filter.Text(BsonString("test"))
         val results = collection.find(filter).toList()
         
         // Should return empty as field doesn't exist
@@ -131,13 +131,13 @@ class TextIndexTest {
         }
         
         // Search for "development"
-        val filter = Filter.Field.Text("tags", BsonString("development"))
+        val filter = Filter.Text(BsonString("development"))
         val results = collection.find(filter).toList()
         
         assertEquals(2, results.size)
         
         // Search for "programming" (should not find the updated document)
-        val filter2 = Filter.Field.Text("tags", BsonString("programming"))
+        val filter2 = Filter.Text(BsonString("programming"))
         val results2 = collection.find(filter2).toList()
         
         assertEquals(0, results2.size)
@@ -156,7 +156,7 @@ class TextIndexTest {
         
         collection.deleteOne { "id" eq 1 }
         
-        val filter = Filter.Field.Text("description", BsonString("important"))
+        val filter = Filter.Text(BsonString("important"))
         val results = collection.find(filter).toList()
         
         assertEquals(1, results.size)
@@ -176,7 +176,7 @@ class TextIndexTest {
         collection.insert(buildDocument { "content" put "uncategorized items" })
         
         // Should match "category" within larger words
-        val filter = Filter.Field.Text("content", BsonString("category"))
+        val filter = Filter.Text(BsonString("category"))
         val results = collection.find(filter).toList()
         
         // Only exact token matches, not partial
