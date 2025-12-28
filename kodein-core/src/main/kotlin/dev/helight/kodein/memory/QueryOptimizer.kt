@@ -12,6 +12,12 @@ class QueryOptimizer(
     private val textIndices: Set<String>,
     private val documentCount: Int
 ) {
+    companion object {
+        // Selectivity estimates for cost calculation
+        private const val INDEXED_FIELD_SELECTIVITY = 0.1 // 10% of documents
+        private const val RANGE_QUERY_SELECTIVITY = 0.3 // 30% of documents
+        private const val TEXT_SEARCH_SELECTIVITY = 0.2 // 20% of documents
+    }
 
     /**
      * Optimize a filter and create an execution plan
@@ -127,16 +133,16 @@ class QueryOptimizer(
                 if (indexDef?.indexType == FieldIndexType.UNIQUE) {
                     1 // Unique index, expect single result
                 } else {
-                    (documentCount * 0.1).toInt().coerceAtLeast(1) // 10% selectivity estimate
+                    (documentCount * INDEXED_FIELD_SELECTIVITY).toInt().coerceAtLeast(1)
                 }
             }
             is Filter.Field.In -> {
                 val arraySize = filter.value.size
-                val perValue = (documentCount * 0.1).toInt()
+                val perValue = (documentCount * INDEXED_FIELD_SELECTIVITY).toInt()
                 (arraySize * perValue).coerceAtMost(documentCount)
             }
             is Filter.Field.Comp -> {
-                (documentCount * 0.3).toInt().coerceAtLeast(1) // 30% selectivity for range queries
+                (documentCount * RANGE_QUERY_SELECTIVITY).toInt().coerceAtLeast(1)
             }
             else -> documentCount
         }
@@ -146,7 +152,7 @@ class QueryOptimizer(
      * Estimate results for text filter
      */
     private fun estimateTextResults(filter: Filter.Field.Text): Int {
-        return (documentCount * 0.2).toInt().coerceAtLeast(1) // 20% selectivity for text search
+        return (documentCount * TEXT_SEARCH_SELECTIVITY).toInt().coerceAtLeast(1)
     }
 
     /**

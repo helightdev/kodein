@@ -228,7 +228,8 @@ class MemoryDocumentCollection(
         
         if (searchTokens.isEmpty()) return emptySequence()
         
-        // For simplicity, return documents that contain any of the tokens
+        // Return documents that contain any of the search tokens
+        // These candidates will be further filtered by the Text filter evaluation
         val candidates = searchTokens.flatMap { token ->
             textIndex[token]?.toList() ?: emptyList()
         }.toSet()
@@ -283,7 +284,7 @@ class MemoryDocumentCollection(
         }
     }
 
-    private fun deepCopy(document: BsonDocument): BsonDocument {
+    private fun shallowCopy(document: BsonDocument): BsonDocument {
         val copy = BsonDocument()
         for ((key, value) in document) {
             copy[key] = value

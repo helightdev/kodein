@@ -145,12 +145,14 @@ sealed class Filter {
         }
 
         class Text(path: String, override val value: BsonString) : Field(path) {
+            // Cache the lowercase search term for better performance
+            private val searchTermLowercase = value.value.lowercase()
+            
             override fun evalField(document: BsonDocument): Boolean {
                 val fieldValue = document.getEmbedded(path) ?: return false
                 if (fieldValue !is BsonString) return false
-                val searchTerm = value.value.lowercase()
                 val fieldText = fieldValue.value.lowercase()
-                return fieldText.contains(searchTerm)
+                return fieldText.contains(searchTermLowercase)
             }
         }
 
