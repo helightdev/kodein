@@ -6,6 +6,7 @@ import org.bson.BsonArray
 import org.bson.BsonDocument
 import org.bson.BsonInt32
 import org.bson.BsonNumber
+import org.bson.BsonString
 import org.bson.BsonValue
 
 sealed class Filter {
@@ -13,6 +14,29 @@ sealed class Filter {
     class Or(val filters: List<Filter>) : Filter()
     class Not(val filter: Filter) : Filter()
     class Native(val value: Any) : Filter()
+    
+    /**
+     * Text search filter - searches across all text-indexed fields
+     * Similar to MongoDB's $text operator
+     */
+    class Text(val searchTerm: BsonString) : Filter() {
+        // Cache the lowercase search term for better performance
+        private val searchTermLowercase = searchTerm.value.lowercase()
+        
+        /**
+         * Evaluate text search across all string fields in the document
+         */
+        fun evalText(document: BsonDocument): Boolean {
+            // Search through all string fields in the document
+            return document.values.any { value ->
+                if (value is BsonString) {
+                    value.value.lowercase().contains(searchTermLowercase)
+                } else {
+                    false
+                }
+            }
+        }
+    }
 
 
     fun eval(document: BsonDocument): Boolean {
@@ -21,6 +45,7 @@ sealed class Filter {
             is Or -> filters.any { it.eval(document) }
             is Not -> !filter.eval(document)
             is Field -> this.evalField(document)
+            is Text -> this.evalText(document)
             is Native -> throw UnsupportedOperationException("Native filter evaluation is not supported")
         }
     }
