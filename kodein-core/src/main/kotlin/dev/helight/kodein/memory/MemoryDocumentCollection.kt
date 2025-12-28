@@ -181,10 +181,18 @@ class MemoryDocumentCollection(
             }
             is QueryPlan.TextIndexScan -> {
                 val candidates = getTextCandidates(plan.textFilter)
-                // Create a filter with indexed fields specified for proper evaluation
-                val textFilterWithFields = Filter.Text(plan.textFilter.searchTerm, plan.indexedFields)
-                // Always evaluate the text filter on candidates to ensure they still match
-                val filtered = candidates.filter { textFilterWithFields.eval(it) }
+                // Evaluate text filter on candidates using only indexed fields
+                val searchTermLower = plan.textFilter.searchTerm.value.lowercase()
+                val filtered = candidates.filter { doc ->
+                    plan.indexedFields.any { fieldPath ->
+                        val fieldValue = doc.getEmbedded(fieldPath)
+                        if (fieldValue is BsonString) {
+                            fieldValue.value.lowercase().contains(searchTermLower)
+                        } else {
+                            false
+                        }
+                    }
+                }
                 if (plan.remainingFilter != null) {
                     filtered.filter { plan.remainingFilter.eval(it) }
                 } else {
