@@ -164,6 +164,14 @@ object MongoFilterConverter {
                 )
             }
 
+            is Filter.Field.Regex -> when {
+                relaxed -> builder.addFilter(documentOf(filter.path to filter.value))
+                else -> builder.inlineAnd(
+                    documentOf(filter.path to filter.value),
+                    Filters.not(Filters.type(filter.path, BsonType.ARRAY))
+                )
+            }
+
             else -> error("Unsupported filter type: $filter")
         }
     }

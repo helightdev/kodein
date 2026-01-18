@@ -2,21 +2,13 @@ package dev.helight.kodein.dsl
 
 import dev.helight.kodein.BsonMarshaller
 import dev.helight.kodein.Kodein
-import dev.helight.kodein.spec.DumbFieldSpec
-import dev.helight.kodein.spec.EmbeddedFieldSpec
-import dev.helight.kodein.spec.FieldNameProducer
-import dev.helight.kodein.spec.FieldSpec
 import dev.helight.kodein.collection.Filter
+import dev.helight.kodein.collection.Filter.Field.Regex.Companion.toBsonRegex
 import dev.helight.kodein.collection.FindOptions
-import dev.helight.kodein.spec.PrimitiveFieldSpec
-import dev.helight.kodein.spec.TypedCollectionSpec
 import dev.helight.kodein.collection.Update
-import dev.helight.kodein.spec.ArrayFieldSpec
-import org.bson.BsonArray
-import org.bson.BsonDocument
-import org.bson.BsonInt32
-import org.bson.BsonNull
-import org.bson.BsonValue
+import dev.helight.kodein.spec.*
+import org.bson.*
+import java.util.regex.Pattern
 
 @DslMarker
 annotation class QueryDsl
@@ -114,6 +106,18 @@ interface FilterBuilder : FilterBuilderBase, DumbFieldSpecFilterBuilder, TypeAwa
 
     infix fun String.lte(value: Any?) {
         filterList.add(Filter.Field.Comp(this, BsonMarshaller.marshal(value), Filter.CompType.LTE))
+    }
+
+    infix fun String.regex(pattern: String) {
+        filterList.add(Filter.Field.Regex(this, BsonRegularExpression(pattern)))
+    }
+
+    fun String.regex(pattern: String, options: String) {
+        filterList.add(Filter.Field.Regex(this, BsonRegularExpression(pattern, options)))
+    }
+
+    infix fun String.regex(pattern: Pattern) {
+        filterList.add(Filter.Field.Regex(this, pattern.toBsonRegex()))
     }
 
     infix fun String.inRange(range: ClosedRange<*>) {
