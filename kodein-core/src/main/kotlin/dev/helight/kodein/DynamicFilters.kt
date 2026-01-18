@@ -48,6 +48,28 @@ class DynamicFilters(
             "lt" -> Filter.Field.Comp(key, value, Filter.CompType.LT)
             "gte" -> Filter.Field.Comp(key, value, Filter.CompType.GTE)
             "lte" -> Filter.Field.Comp(key, value, Filter.CompType.LTE)
+            "ain" -> Filter.Field.ArrCont(key, value)
+            "anin" -> Filter.Field.ArrNotCont(key, value)
+            "aany" -> Filter.Field.ArrComp(
+                key,
+                requireNotNull(value as? BsonArray) { "Value for 'aany' operator must be a BsonArray" },
+                Filter.ArrayCompType.ANY
+            )
+            "aall" -> Filter.Field.ArrComp(
+                key,
+                requireNotNull(value as? BsonArray) { "Value for 'aall' operator must be a BsonArray" },
+                Filter.ArrayCompType.ALL
+            )
+            "aset" -> Filter.Field.ArrComp(
+                key,
+                requireNotNull(value as? BsonArray) { "Value for 'aset' operator must be a BsonArray" },
+                Filter.ArrayCompType.SET
+            )
+            "anone" -> Filter.Field.ArrComp(
+                key,
+                requireNotNull(value as? BsonArray) { "Value for 'anone' operator must be a BsonArray" },
+                Filter.ArrayCompType.NONE
+            )
             else -> throw IllegalArgumentException("Unsupported operator: $operator")
         }
     }
