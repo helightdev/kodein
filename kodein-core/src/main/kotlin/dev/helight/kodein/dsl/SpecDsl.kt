@@ -5,6 +5,7 @@ import dev.helight.kodein.spec.CollectionSpec
 import dev.helight.kodein.collection.DocumentCollection
 import dev.helight.kodein.spec.DumbFieldSpec
 import dev.helight.kodein.collection.Filter
+import dev.helight.kodein.collection.Filter.Field.Regex.Companion.toBsonRegex
 import dev.helight.kodein.spec.ArrayFieldSpec
 import dev.helight.kodein.spec.CrudCollection
 import dev.helight.kodein.spec.PrimitiveFieldSpec
@@ -12,6 +13,8 @@ import dev.helight.kodein.spec.SpecDsl
 import dev.helight.kodein.spec.TypedCollectionSpec
 import org.bson.BsonArray
 import org.bson.BsonInt32
+import org.bson.BsonRegularExpression
+import java.util.regex.Pattern
 
 interface DumbFieldSpecFilterBuilder : FilterBuilderBase {
     infix fun DumbFieldSpec.eq(value: Any?) {
@@ -44,6 +47,18 @@ interface DumbFieldSpecFilterBuilder : FilterBuilderBase {
 
     infix fun DumbFieldSpec.lte(value: Any?) {
         filterList.add(Filter.Field.Comp(this.name, BsonMarshaller.marshal(value), Filter.CompType.LTE))
+    }
+
+    infix fun DumbFieldSpec.regex(pattern: String) {
+        filterList.add(Filter.Field.Regex(this.name, BsonRegularExpression(pattern)))
+    }
+
+    fun DumbFieldSpec.regex(pattern: String, options: String) {
+        filterList.add(Filter.Field.Regex(this.name, BsonRegularExpression(pattern, options)))
+    }
+
+    infix fun DumbFieldSpec.regex(pattern: Pattern) {
+        filterList.add(Filter.Field.Regex(this.name, pattern.toBsonRegex()))
     }
 }
 
@@ -79,6 +94,25 @@ interface TypeAwareFieldSpecFilterBuilder : FilterBuilderBase {
     infix fun <T : Any> PrimitiveFieldSpec<T>.lte(value: T?) {
         filterList.add(Filter.Field.Comp(this.name, BsonMarshaller.marshal(value), Filter.CompType.LTE))
     }
+
+    // Regex helpers
+    infix fun <T : Any> PrimitiveFieldSpec<T>.regex(pattern: String) {
+        filterList.add(Filter.Field.Regex(this.name, BsonRegularExpression(pattern)))
+    }
+
+    fun <T : Any> PrimitiveFieldSpec<T>.regex(pattern: String, options: String) {
+        filterList.add(Filter.Field.Regex(this.name, BsonRegularExpression(pattern, options)))
+    }
+
+    infix fun <T : Any> PrimitiveFieldSpec<T>.regex(pattern: Pattern) {
+        val opts = StringBuilder()
+        if ((pattern.flags() and Pattern.CASE_INSENSITIVE) != 0) opts.append('i')
+        if ((pattern.flags() and Pattern.MULTILINE) != 0) opts.append('m')
+        if ((pattern.flags() and Pattern.DOTALL) != 0) opts.append('s')
+        if ((pattern.flags() and Pattern.COMMENTS) != 0) opts.append('x')
+        filterList.add(Filter.Field.Regex(this.name, BsonRegularExpression(pattern.pattern(), opts.toString())))
+    }
+
 }
 
 interface ArrayFieldSpecFilterBuilder : FilterBuilderBase {

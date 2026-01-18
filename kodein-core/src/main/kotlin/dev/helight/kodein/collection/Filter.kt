@@ -6,7 +6,9 @@ import org.bson.BsonArray
 import org.bson.BsonDocument
 import org.bson.BsonInt32
 import org.bson.BsonNumber
+import org.bson.BsonRegularExpression
 import org.bson.BsonValue
+import java.util.regex.Pattern
 
 sealed class Filter {
     protected var isOptimized: Boolean = false
@@ -168,6 +170,44 @@ sealed class Filter {
                 }
             }
 
+        }
+
+        class Regex(path: String, override val value: BsonRegularExpression) : Field(path) {
+            override fun evalField(document: BsonDocument): Boolean {
+                val fieldValue = document.getEmbedded(path) ?: return false
+                if (fieldValue is BsonArray) return false
+                val target = when (fieldValue) {
+                    is org.bson.BsonString -> fieldValue.value
+                    else -> return false
+                }
+
+                val pattern = value.pattern
+                val flags = value.options
+                var intFlags = 0
+                if (flags.contains("i")) intFlags = intFlags or Pattern.CASE_INSENSITIVE
+                if (flags.contains("m")) intFlags = intFlags or Pattern.MULTILINE
+                if (flags.contains("s")) intFlags = intFlags or Pattern.DOTALL
+                if (flags.contains("x")) intFlags = intFlags or Pattern.COMMENTS
+                val compiled = try {
+                    Pattern.compile(pattern, intFlags)
+                } catch (_: Throwable) {
+                    return false
+                }
+
+                return compiled.matcher(target).find()
+            }
+
+            companion object {
+                fun Pattern.toBsonRegex(): BsonRegularExpression {
+                    val opts = StringBuilder()
+                    val flags = this.flags()
+                    if ((flags and Pattern.CASE_INSENSITIVE) != 0) opts.append('i')
+                    if ((flags and Pattern.MULTILINE) != 0) opts.append('m')
+                    if ((flags and Pattern.DOTALL) != 0) opts.append('s')
+                    if ((flags and Pattern.COMMENTS) != 0) opts.append('x')
+                    return BsonRegularExpression(this.pattern(), opts.toString())
+                }
+            }
         }
 
         abstract fun evalField(document: BsonDocument): Boolean
