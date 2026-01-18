@@ -9,6 +9,8 @@ import org.bson.BsonNumber
 import org.bson.BsonValue
 
 sealed class Filter {
+    protected var isOptimized: Boolean = false
+
     class And(val filters: List<Filter>) : Filter()
     class Or(val filters: List<Filter>) : Filter()
     class Not(val filter: Filter) : Filter()
@@ -23,6 +25,31 @@ sealed class Filter {
             is Field -> this.evalField(document)
             is Native -> throw UnsupportedOperationException("Native filter evaluation is not supported")
         }
+    }
+
+    fun optimize(): Filter {
+        if (isOptimized) return this
+        return when (this) {
+            is And -> {
+                val flattened = filters.flatMap {
+                    val filter = it.optimize()
+                    if (filter is And) filter.filters else listOf(filter)
+                }
+                flattened.singleOrNull() ?: And(flattened)
+            }
+            is Or -> {
+                val flattened = filters.flatMap {
+                    val filter = it.optimize()
+                    if (filter is Or) filter.filters else listOf(filter)
+                }
+                flattened.singleOrNull() ?: Or(flattened)
+            }
+            is Not -> {
+                val inner = filter.optimize()
+                if (inner is Not) inner.filter else Not(inner)
+            }
+            is Field, is Native -> this
+        }.apply { isOptimized = true }
     }
 
     val upsertUpdates: List<Update.Field> by lazy {

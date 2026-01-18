@@ -63,20 +63,20 @@ interface FilterBuilder : FilterBuilderBase, DumbFieldSpecFilterBuilder, TypeAwa
     fun and(block: FilterBuilder.() -> Unit) {
         val builder = FilterBuilderImpl()
         builder.block()
-        filterList.add(andUnwrap(builder.filterList))
+        filterList.add(Filter.And(builder.filterList))
     }
 
     fun or(block: FilterBuilder.() -> Unit) {
         val builder = FilterBuilderImpl()
         builder.block()
-        filterList.add(orUnwarp(builder.filterList))
+        filterList.add(Filter.Or(builder.filterList))
     }
 
     fun not(block: FilterBuilder.() -> Unit) {
         val builder = FilterBuilderImpl()
         builder.block()
         if (builder.filterList.isEmpty()) return
-        filterList.add(Filter.Not(andUnwrap(builder.filterList)))
+        filterList.add(Filter.Not(Filter.And(builder.filterList)))
     }
 
     //<editor-fold desc="Generic Field DSL">
@@ -203,23 +203,13 @@ interface FilterBuilder : FilterBuilderBase, DumbFieldSpecFilterBuilder, TypeAwa
 
 
     //</editor-fold>
-
-    companion object {
-        fun andUnwrap(filter: List<Filter>): Filter {
-            return if (filter.size == 1) filter[0] else Filter.And(filter)
-        }
-
-        fun orUnwarp(filter: List<Filter>): Filter {
-            return if (filter.size == 1) filter[0] else Filter.Or(filter)
-        }
-    }
 }
 
 @QueryDsl
 class FilterBuilderImpl : FilterBuilder {
     override val filterList: MutableList<Filter> = mutableListOf()
 
-    fun build(): Filter = FilterBuilder.andUnwrap(filterList)
+    fun build(): Filter = Filter.And(filterList).optimize()
 }
 
 @QueryDsl
@@ -239,7 +229,7 @@ class FindBuilder : FindOptionsBuilder, FilterBuilder {
     }
 
     internal fun build(): Pair<Filter, FindOptions> = Pair(
-        FilterBuilder.andUnwrap(filterList),
+        Filter.And(filterList).optimize(),
         FindOptions(
             skip = skip ?: 0,
             limit = limit ?: Int.MAX_VALUE,
@@ -448,7 +438,7 @@ class SelectiveUpdateBuilder(
     fun where(block: FilterBuilder.() -> Unit) {
         val builder = FilterBuilderImpl()
         builder.block()
-        filter = FilterBuilder.andUnwrap(builder.filterList)
+        filter = Filter.And(builder.filterList)
     }
 
     fun whereId(id: Any?): SelectiveUpdateBuilder {
@@ -462,7 +452,7 @@ class SelectiveUpdateBuilder(
 
     internal fun build(): Pair<Filter, Update> {
         return Pair(
-            filter ?: Filter.And(listOf()),
+            filter?.optimize() ?: Filter.And(listOf()),
             Update(fieldUpdates, upsert)
         )
     }
