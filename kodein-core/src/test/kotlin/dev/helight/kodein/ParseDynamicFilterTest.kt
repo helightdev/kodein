@@ -3,8 +3,12 @@ package dev.helight.kodein
 import dev.helight.kodein.collection.Filter
 import org.bson.BsonArray
 import org.bson.BsonInt32
+import org.bson.BsonObjectId
 import org.bson.BsonString
+import org.bson.types.ObjectId
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.test.assertFailsWith
 
@@ -20,11 +24,11 @@ class ParseDynamicFilterTest {
 
         val result = parser.parseAll(input)
 
-        Assertions.assertTrue(result is Filter.And)
+        assertTrue(result is Filter.And)
         val filters = (result as Filter.And).filters
-        Assertions.assertEquals(2, filters.size)
-        Assertions.assertTrue(filters[0] is Filter.Field.Eq)
-        Assertions.assertTrue(filters[1] is Filter.Field.Comp)
+        assertEquals(2, filters.size)
+        assertTrue(filters[0] is Filter.Field.Eq)
+        assertTrue(filters[1] is Filter.Field.Comp)
     }
 
     @Test
@@ -34,9 +38,9 @@ class ParseDynamicFilterTest {
 
         val result = parser.parseAll(input)
 
-        Assertions.assertTrue(result is Filter.Field.Eq)
-        Assertions.assertEquals("field1", (result as Filter.Field.Eq).path)
-        Assertions.assertEquals(BsonString("value1"), result.value)
+        assertTrue(result is Filter.Field.Eq)
+        assertEquals("field1", (result as Filter.Field.Eq).path)
+        assertEquals(BsonString("value1"), result.value)
     }
 
     @Test
@@ -46,9 +50,9 @@ class ParseDynamicFilterTest {
 
         val result = parser.parseSingle(input)
 
-        Assertions.assertTrue(result is Filter.Field.Eq)
-        Assertions.assertEquals("field1", (result as Filter.Field.Eq).path)
-        Assertions.assertEquals(BsonString("value1"), result.value)
+        assertTrue(result is Filter.Field.Eq)
+        assertEquals("field1", (result as Filter.Field.Eq).path)
+        assertEquals(BsonString("value1"), result.value)
     }
 
     @Test
@@ -58,10 +62,10 @@ class ParseDynamicFilterTest {
 
         val result = parser.parseSingle(input)
 
-        Assertions.assertTrue(result is Filter.Field.Comp)
-        Assertions.assertEquals("field1", (result as Filter.Field.Comp).path)
-        Assertions.assertEquals(BsonInt32(42), result.value)
-        Assertions.assertEquals(Filter.CompType.GT, result.type)
+        assertTrue(result is Filter.Field.Comp)
+        assertEquals("field1", (result as Filter.Field.Comp).path)
+        assertEquals(BsonInt32(42), result.value)
+        assertEquals(Filter.CompType.GT, result.type)
     }
 
     @Test
@@ -71,13 +75,13 @@ class ParseDynamicFilterTest {
 
         val result = parser.parseSingle(input)
 
-        Assertions.assertTrue(result is Filter.Field.In)
-        Assertions.assertEquals("field1", (result as Filter.Field.In).path)
+        assertTrue(result is Filter.Field.In)
+        assertEquals("field1", (result as Filter.Field.In).path)
         val valueArray = result.value
-        Assertions.assertTrue(valueArray is BsonArray)
-        Assertions.assertEquals(2, valueArray.size)
-        Assertions.assertEquals(BsonString("value1"), valueArray[0])
-        Assertions.assertEquals(BsonString("value2"), valueArray[1])
+        assertTrue(valueArray is BsonArray)
+        assertEquals(2, valueArray.size)
+        assertEquals(BsonString("value1"), valueArray[0])
+        assertEquals(BsonString("value2"), valueArray[1])
     }
 
     @Test
@@ -89,7 +93,7 @@ class ParseDynamicFilterTest {
             parser.parseSingle(input)
         }
 
-        Assertions.assertEquals("Field 'field2' is not permitted in filters", exception.message)
+        assertEquals("Field 'field2' is not permitted in filters", exception.message)
     }
 
     @Test
@@ -101,7 +105,7 @@ class ParseDynamicFilterTest {
             parser.parseSingle(input)
         }
 
-        Assertions.assertEquals("Value for 'in' operator must be a BsonArray", exception.message)
+        assertEquals("Value for 'in' operator must be a BsonArray", exception.message)
     }
 
     @Test
@@ -113,7 +117,7 @@ class ParseDynamicFilterTest {
             parser.parseSingle(input)
         }
 
-        Assertions.assertEquals("Invalid filter format: invalid_filter_format", exception.message)
+        assertEquals("Invalid filter format: invalid_filter_format", exception.message)
     }
 
     @Test
@@ -125,7 +129,7 @@ class ParseDynamicFilterTest {
             parser.parseSingle(input)
         }
 
-        Assertions.assertEquals("Unsupported operator: unsupported", exception.message)
+        assertEquals("Unsupported operator: unsupported", exception.message)
     }
 
     @Test
@@ -135,9 +139,9 @@ class ParseDynamicFilterTest {
 
         val result = parser.parseSingle(input)
 
-        Assertions.assertTrue(result is Filter.Field.Eq)
-        Assertions.assertEquals("field1", (result as Filter.Field.Eq).path)
-        Assertions.assertEquals(BsonString("value"), result.value)
+        assertTrue(result is Filter.Field.Eq)
+        assertEquals("field1", (result as Filter.Field.Eq).path)
+        assertEquals(BsonString("value"), result.value)
     }
 
     @Test
@@ -152,7 +156,7 @@ class ParseDynamicFilterTest {
             parser.parseAll(input)
         }
 
-        Assertions.assertEquals("Invalid filter format: invalid_filter", exception.message)
+        assertEquals("Invalid filter format: invalid_filter", exception.message)
     }
 
     @Test
@@ -162,8 +166,18 @@ class ParseDynamicFilterTest {
 
         val result = parser.parseSingle(input)
 
-        Assertions.assertTrue(result is Filter.Field.Eq)
-        Assertions.assertEquals("user.name", (result as Filter.Field.Eq).path)
-        Assertions.assertEquals(BsonString("John"), result.value)
+        assertTrue(result is Filter.Field.Eq)
+        assertEquals("user.name", (result as Filter.Field.Eq).path)
+        assertEquals(BsonString("John"), result.value)
+    }
+
+    @Test
+    fun `_id transformer works correctly`() {
+        val id = ObjectId.get().toHexString()
+        val filter = DynamicFilters.forCollection(TypedCollectionTests.Movie).parseSingle("id:eq:\"$id\"")
+
+        assertTrue(filter is Filter.Field.Eq)
+        assertEquals("_id", (filter as Filter.Field.Eq).path)
+        assertEquals(ObjectId(id), (filter.value as BsonObjectId).value)
     }
 }

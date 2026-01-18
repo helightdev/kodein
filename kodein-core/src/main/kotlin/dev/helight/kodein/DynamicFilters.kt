@@ -5,25 +5,38 @@ import dev.helight.kodein.collection.Filter
 import dev.helight.kodein.spec.CollectionSpec
 import dev.helight.kodein.spec.FieldNameProducer
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonPrimitive
 import org.bson.BsonArray
+import org.bson.BsonObjectId
+import org.bson.BsonValue
+import org.bson.types.ObjectId
 
-class DynamicFilters(
+data class DynamicFilters(
     val permittedFields: Set<String>? = null,
-    val replacements: Map<String, String> = emptyMap()
+    val permittedOperations: Set<String>? = null,
+    val replacements: Map<String, String> = emptyMap(),
+    val transformers: Map<String, (JsonElement) -> BsonValue> = emptyMap(),
 ) {
     companion object {
         val default = DynamicFilters()
 
         fun forSpecs(vararg spec: FieldNameProducer, replacements: Map<String, String> = emptyMap()): DynamicFilters {
             val permissible = spec.flatMap { it.getFieldsNames() }.toSet()
-            return DynamicFilters(permissible, replacements)
+            return DynamicFilters(permissible, replacements = replacements)
         }
 
-        fun forCollection(spec: CollectionSpec, replacements: Map<String, String> = mapOf(
-            "id" to "_id"
-        )): DynamicFilters {
+        fun forCollection(
+            spec: CollectionSpec, replacements: Map<String, String> = mapOf("id" to "_id")
+        ): DynamicFilters {
             val permissible = spec.getFieldsNames().toSet()
-            return DynamicFilters(permissible + setOf("_id", "id"), replacements)
+            return DynamicFilters(permissible + setOf("_id", "id"), replacements = replacements,
+                transformers = mapOf("_id" to ::transformBsonId)
+            )
+        }
+
+        fun transformBsonId(jsonElement: JsonElement): BsonValue {
+            return BsonObjectId(ObjectId(jsonElement.jsonPrimitive.content))
         }
     }
 
@@ -43,7 +56,8 @@ class DynamicFilters(
             throw IllegalArgumentException("Field '$key' is not permitted in filters")
         }
         val operator = if (it.size == 3) it[1].trim() else "eq"
-        val value = Json.parseToJsonElement(it.last()).toBson()
+        val valueElement = Json.parseToJsonElement(it.last())
+        val value = transformers[key]?.invoke(valueElement) ?: valueElement.toBson()
 
         return when (operator) {
             "eq" -> Filter.Field.Eq(key, value)
