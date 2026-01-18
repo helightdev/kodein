@@ -17,6 +17,7 @@ data class DynamicFilters(
     val permittedOperations: Set<String>? = null,
     val replacements: Map<String, String> = emptyMap(),
     val transformers: Map<String, (JsonElement) -> BsonValue> = emptyMap(),
+    val virtualFields: Map<String, (JsonElement, String) -> Filter> = emptyMap(),
 ) {
     companion object {
         val default = DynamicFilters()
@@ -30,7 +31,8 @@ data class DynamicFilters(
             spec: CollectionSpec, replacements: Map<String, String> = mapOf("id" to "_id")
         ): DynamicFilters {
             val permissible = spec.getFieldsNames().toSet()
-            return DynamicFilters(permissible + setOf("_id", "id"), replacements = replacements,
+            return DynamicFilters(
+                permissible + setOf("_id", "id"), replacements = replacements,
                 transformers = mapOf("_id" to ::transformBsonId)
             )
         }
@@ -49,14 +51,13 @@ data class DynamicFilters(
         val it = str.split(":")
         if (it.size !in 2..3) throw IllegalArgumentException("Invalid filter format: $str")
         var key = it[0].trim()
-        if (key in replacements) {
-            key = replacements[key]!!
-        }
+        if (key in replacements) key = replacements[key]!!
         if (permittedFields != null && key !in permittedFields) {
             throw IllegalArgumentException("Field '$key' is not permitted in filters")
         }
         val operator = if (it.size == 3) it[1].trim() else "eq"
         val valueElement = Json.parseToJsonElement(it.last())
+        virtualFields[key]?.invoke(valueElement, operator)?.let { return it }
         val value = transformers[key]?.invoke(valueElement) ?: valueElement.toBson()
 
         return when (operator) {
