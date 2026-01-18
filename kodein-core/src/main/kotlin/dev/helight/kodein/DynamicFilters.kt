@@ -7,7 +7,8 @@ import kotlinx.serialization.json.Json
 import org.bson.BsonArray
 
 class DynamicFilters(
-    val permittedFields: Set<String>? = null
+    val permittedFields: Set<String>? = null,
+    val replacements: Map<String, String> = emptyMap()
 ) {
     companion object {
         val default = DynamicFilters()
@@ -26,7 +27,10 @@ class DynamicFilters(
     fun parseSingle(str: String): Filter {
         val it = str.split(":")
         if (it.size !in 2..3) throw IllegalArgumentException("Invalid filter format: $str")
-        val key = it[0].trim()
+        var key = it[0].trim()
+        if (key in replacements) {
+            key = replacements[key]!!
+        }
         if (permittedFields != null && key !in permittedFields) {
             throw IllegalArgumentException("Field '$key' is not permitted in filters")
         }
