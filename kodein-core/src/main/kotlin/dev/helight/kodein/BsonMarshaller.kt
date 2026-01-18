@@ -1,5 +1,18 @@
 package dev.helight.kodein
 
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.double
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.long
+import kotlinx.serialization.json.longOrNull
 import org.bson.BsonArray
 import org.bson.BsonBinary
 import org.bson.BsonBoolean
@@ -13,6 +26,9 @@ import org.bson.BsonObjectId
 import org.bson.BsonString
 import org.bson.BsonValue
 import org.bson.types.ObjectId
+import kotlin.collections.component1
+import kotlin.collections.component2
+import kotlin.collections.forEach
 import kotlin.collections.iterator
 import kotlin.reflect.KClass
 import kotlin.time.Instant
@@ -70,5 +86,37 @@ object BsonMarshaller {
         if (bsonValue != null) return bsonValue
         requireNotNull(kodein) { "Kodein instance is required for custom type serialization." }
         return kodein.encode(value!!, clazz)
+    }
+
+    fun JsonElement.toBson(): BsonValue {
+        return when (this) {
+            is JsonNull -> BsonNull.VALUE
+            is JsonArray -> {
+                val bsonArray = BsonArray()
+                this.forEach { element ->
+                    bsonArray.add(element.toBson())
+                }
+                bsonArray
+            }
+
+            is JsonObject -> {
+                val bsonDocument = BsonDocument()
+                this.entries.forEach { (key, value) ->
+                    bsonDocument.append(key, value.toBson())
+                }
+                bsonDocument
+            }
+
+            is JsonPrimitive -> {
+                when {
+                    this.isString -> org.bson.BsonString(this.content)
+                    this.booleanOrNull != null -> org.bson.BsonBoolean(this.boolean)
+                    this.intOrNull != null -> org.bson.BsonInt32(this.int)
+                    this.longOrNull != null -> org.bson.BsonInt64(this.long)
+                    this.doubleOrNull != null -> org.bson.BsonDouble(this.double)
+                    else -> throw IllegalArgumentException("Unsupported JsonPrimitive type for conversion to BsonValue")
+                }
+            }
+        }
     }
 }
