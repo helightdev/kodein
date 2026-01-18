@@ -2,6 +2,7 @@ package dev.helight.kodein
 
 import dev.helight.kodein.BsonMarshaller.toBson
 import dev.helight.kodein.collection.Filter
+import dev.helight.kodein.spec.CollectionSpec
 import dev.helight.kodein.spec.FieldNameProducer
 import kotlinx.serialization.json.Json
 import org.bson.BsonArray
@@ -13,9 +14,16 @@ class DynamicFilters(
     companion object {
         val default = DynamicFilters()
 
-        fun forSpecs(vararg spec: FieldNameProducer): DynamicFilters {
+        fun forSpecs(vararg spec: FieldNameProducer, replacements: Map<String, String> = emptyMap()): DynamicFilters {
             val permissible = spec.flatMap { it.getFieldsNames() }.toSet()
-            return DynamicFilters(permissible)
+            return DynamicFilters(permissible, replacements)
+        }
+
+        fun forCollection(spec: CollectionSpec, replacements: Map<String, String> = mapOf(
+            "id" to "_id"
+        )): DynamicFilters {
+            val permissible = spec.getFieldsNames().toSet()
+            return DynamicFilters(permissible + setOf("_id", "id"), replacements)
         }
     }
 
@@ -59,21 +67,25 @@ class DynamicFilters(
                 requireNotNull(value as? BsonArray) { "Value for 'aany' operator must be a BsonArray" },
                 Filter.ArrayCompType.ANY
             )
+
             "aall" -> Filter.Field.ArrComp(
                 key,
                 requireNotNull(value as? BsonArray) { "Value for 'aall' operator must be a BsonArray" },
                 Filter.ArrayCompType.ALL
             )
+
             "aset" -> Filter.Field.ArrComp(
                 key,
                 requireNotNull(value as? BsonArray) { "Value for 'aset' operator must be a BsonArray" },
                 Filter.ArrayCompType.SET
             )
+
             "anone" -> Filter.Field.ArrComp(
                 key,
                 requireNotNull(value as? BsonArray) { "Value for 'anone' operator must be a BsonArray" },
                 Filter.ArrayCompType.NONE
             )
+
             else -> throw IllegalArgumentException("Unsupported operator: $operator")
         }
     }
