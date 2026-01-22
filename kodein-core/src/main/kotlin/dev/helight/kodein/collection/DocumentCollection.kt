@@ -6,6 +6,7 @@ import dev.helight.kodein.dsl.FilterBuilder
 import dev.helight.kodein.dsl.FindBuilder
 import dev.helight.kodein.dsl.SelectiveUpdateBuilder
 import dev.helight.kodein.dsl.buildFilter
+import dev.helight.kodein.spec.IndexList
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -60,6 +61,8 @@ interface DocumentCollection {
     suspend fun exists(filter: Filter): Boolean {
         return findOne(filter, FindOptions().copy(limit = 1)) != null
     }
+
+    suspend fun ensureIndices(indices: IndexList) {}
 
 
     // DSL

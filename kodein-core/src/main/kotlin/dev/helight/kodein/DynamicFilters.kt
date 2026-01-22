@@ -48,17 +48,17 @@ data class DynamicFilters(
     }
 
     fun parseSingle(str: String): Filter {
-        val it = str.split(":")
-        if (it.size !in 2..3) throw IllegalArgumentException("Invalid filter format: $str")
+        val it = str.split(":", limit = 3)
+        if (it.size != 3) throw IllegalArgumentException("Invalid filter format: $str")
         var key = it[0].trim()
         if (key in replacements) key = replacements[key]!!
         if (permittedFields != null && key !in permittedFields) {
             throw IllegalArgumentException("Field '$key' is not permitted in filters")
         }
-        val operator = if (it.size == 3) it[1].trim() else "eq"
+        val operator = it[1].trim()
         val valueElement = Json.parseToJsonElement(it.last())
         virtualFields[key]?.invoke(valueElement, operator)?.let { return it }
-        val value = transformers[key]?.invoke(valueElement) ?: valueElement.toBson()
+        val value = transformers[key]?.invoke(valueElement) ?: valueElement.toBson(true)
 
         return when (operator) {
             "eq" -> Filter.Field.Eq(key, value)

@@ -2,6 +2,7 @@ package dev.helight.kodein
 
 import dev.helight.kodein.collection.Filter
 import org.bson.BsonArray
+import org.bson.BsonDateTime
 import org.bson.BsonInt32
 import org.bson.BsonObjectId
 import org.bson.BsonString
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.time.Instant
 import kotlin.test.assertFailsWith
 
 class ParseDynamicFilterTest {
@@ -133,18 +135,6 @@ class ParseDynamicFilterTest {
     }
 
     @Test
-    fun `parseSingle defaults to eq operator if no operator is provided`() {
-        val input = "field1:\"value\""
-        val parser = DynamicFilters(setOf("field1"))
-
-        val result = parser.parseSingle(input)
-
-        assertTrue(result is Filter.Field.Eq)
-        assertEquals("field1", (result as Filter.Field.Eq).path)
-        assertEquals(BsonString("value"), result.value)
-    }
-
-    @Test
     fun `parseAll throws for an invalid filter in the list`() {
         val input = listOf(
             "field1:eq:\"value1\"",
@@ -179,5 +169,16 @@ class ParseDynamicFilterTest {
         assertTrue(filter is Filter.Field.Eq)
         assertEquals("_id", (filter as Filter.Field.Eq).path)
         assertEquals(ObjectId(id), (filter.value as BsonObjectId).value)
+    }
+
+    @Test
+    fun `Iso times are parsed correctly`() {
+        val input = "createdAt:eq:\"2024-01-01T12:00:00Z\""
+        val parser = DynamicFilters(setOf("createdAt"))
+        val result = parser.parseSingle(input)
+        assertTrue(result is Filter.Field.Eq)
+        assertEquals("createdAt", (result as Filter.Field.Eq).path)
+        val instant = Instant.parse("2024-01-01T12:00:00Z")
+        assertEquals(BsonDateTime(instant.toEpochMilli()), result.value)
     }
 }

@@ -1,6 +1,8 @@
 package dev.helight.kodein.mongo
 
 import com.mongodb.client.model.FindOneAndUpdateOptions
+import com.mongodb.client.model.IndexOptions
+import com.mongodb.client.model.Indexes
 import com.mongodb.client.model.InsertManyOptions
 import com.mongodb.client.model.ReplaceOptions
 import com.mongodb.client.model.ReturnDocument
@@ -12,6 +14,8 @@ import dev.helight.kodein.collection.DocumentCollection
 import dev.helight.kodein.collection.Filter
 import dev.helight.kodein.collection.FindOptions
 import dev.helight.kodein.collection.Update
+import dev.helight.kodein.spec.FieldIndexType
+import dev.helight.kodein.spec.IndexList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
@@ -19,11 +23,11 @@ import org.bson.BsonDocument
 
 class MongoDocumentCollection(
     val collection: MongoCollection<BsonDocument>, override val kodein: Kodein,
-    private val relaxed : Boolean = true
+    private val relaxed: Boolean = true
 ) : DocumentCollection {
     override val supportsProjections: Boolean
         get() = true
-    
+
     override suspend fun insert(document: BsonDocument): Boolean {
         val result = collection.insertOne(document)
         return result.insertedId != null
@@ -122,4 +126,19 @@ class MongoDocumentCollection(
             ?.let { kodein.introspect(it) }
     }
 
+    override suspend fun ensureIndices(indices: IndexList) {
+        indices.indices.forEach {
+            if (it.indexType == FieldIndexType.INDEXED) {
+                collection.createIndex(
+                    Indexes.ascending(it.path),
+                    IndexOptions().name(it.indexName)
+                )
+            } else if (it.indexType == FieldIndexType.UNIQUE) {
+                collection.createIndex(
+                    Indexes.ascending(it.path),
+                    IndexOptions().name(it.indexName).unique(true)
+                )
+            }
+        }
+    }
 }

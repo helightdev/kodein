@@ -30,7 +30,6 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.forEach
 import kotlin.collections.iterator
-import kotlin.reflect.KClass
 import kotlin.time.Instant
 
 object BsonMarshaller {
@@ -41,11 +40,13 @@ object BsonMarshaller {
                     this[key] = unmarshal(value)
                 }
             }
+
             is BsonArray -> ArrayList<Any?>(bsonValue.size).apply {
                 bsonValue.forEach { item ->
                     this.add(unmarshal(item))
                 }
             }
+
             is BsonString -> bsonValue.value
             is BsonInt32 -> bsonValue.value
             is BsonInt64 -> bsonValue.value
@@ -88,13 +89,13 @@ object BsonMarshaller {
         return kodein.encode(value!!, clazz)
     }
 
-    fun JsonElement.toBson(): BsonValue {
+    fun JsonElement.toBson(specialTypes: Boolean = false): BsonValue {
         return when (this) {
             is JsonNull -> BsonNull.VALUE
             is JsonArray -> {
                 val bsonArray = BsonArray()
                 this.forEach { element ->
-                    bsonArray.add(element.toBson())
+                    bsonArray.add(element.toBson(specialTypes))
                 }
                 bsonArray
             }
@@ -102,21 +103,31 @@ object BsonMarshaller {
             is JsonObject -> {
                 val bsonDocument = BsonDocument()
                 this.entries.forEach { (key, value) ->
-                    bsonDocument.append(key, value.toBson())
+                    bsonDocument.append(key, value.toBson(specialTypes))
                 }
                 bsonDocument
             }
 
             is JsonPrimitive -> {
                 when {
-                    this.isString -> org.bson.BsonString(this.content)
-                    this.booleanOrNull != null -> org.bson.BsonBoolean(this.boolean)
-                    this.intOrNull != null -> org.bson.BsonInt32(this.int)
-                    this.longOrNull != null -> org.bson.BsonInt64(this.long)
-                    this.doubleOrNull != null -> org.bson.BsonDouble(this.double)
+                    this.isString -> {
+                        if (specialTypes && isoTimestampRegex.matches(this.content)) {
+                            Instant.parseOrNull(this.content)?.let {
+                                return BsonDateTime(it.toEpochMilliseconds())
+                            }
+                        }
+                        BsonString(this.content)
+                    }
+
+                    this.booleanOrNull != null -> BsonBoolean(this.boolean)
+                    this.intOrNull != null -> BsonInt32(this.int)
+                    this.longOrNull != null -> BsonInt64(this.long)
+                    this.doubleOrNull != null -> BsonDouble(this.double)
                     else -> throw IllegalArgumentException("Unsupported JsonPrimitive type for conversion to BsonValue")
                 }
             }
         }
     }
+
+    private val isoTimestampRegex = Regex("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$")
 }

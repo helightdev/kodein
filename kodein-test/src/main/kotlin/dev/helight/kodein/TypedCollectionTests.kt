@@ -85,6 +85,13 @@ interface TypedCollectionTests : DocumentDatabaseScope {
     }
 
     @Test
+    fun `Check ensureIndices does not throw`() = databaseScope {
+        getCollection("movies").ensureIndices(Movie.getIndices())
+        getCollection("ratings").ensureIndices(Rating.getIndices())
+        getCollection("inventory_items").ensureIndices(InventoryItem.getIndices())
+    }
+
+    @Test
     fun `Typed collection find and save`() = databaseScope {
         Movie.crudScope(getCollection("movies")) {
             it.insertMany(movies)
