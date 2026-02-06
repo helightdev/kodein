@@ -46,7 +46,7 @@ class MongoDocumentCollection(
         val result = collection.updateMany(
             bsonFilter, MongoFilterConverter.convertUpdates(update), UpdateOptions().upsert(update.upsert)
         )
-        return if (result.upsertedId != null) 1 else result.modifiedCount.toInt()
+        return if (result.upsertedId != null) 1 else result.matchedCount.toInt()
     }
 
     override suspend fun updateOne(
@@ -57,7 +57,7 @@ class MongoDocumentCollection(
         val result = collection.updateOne(
             bsonFilter, MongoFilterConverter.convertUpdates(update), UpdateOptions().upsert(update.upsert)
         )
-        return result.modifiedCount > 0 || result.upsertedId != null
+        return result.matchedCount > 0 || result.upsertedId != null
     }
 
     override suspend fun updateOneReturning(
@@ -80,7 +80,7 @@ class MongoDocumentCollection(
     ): Boolean {
         val bsonFilter = MongoFilterConverter.convert(filter, relaxed)
         val result = collection.replaceOne(bsonFilter, document, ReplaceOptions().upsert(upsert))
-        return result.modifiedCount > 0 || result.upsertedId != null
+        return result.matchedCount > 0 || result.upsertedId != null
     }
 
     override suspend fun delete(filter: Filter): Int {
